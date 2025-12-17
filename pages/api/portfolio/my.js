@@ -47,10 +47,38 @@ export default async function handler(req, res) {
     // Get all portfolios for the current user
     const portfolios = await findPortfoliosByStudentId(user._id.toString());
 
+    // Add logo URL to each portfolio
+    const portfoliosWithLogo = portfolios.map((portfolio) => {
+      const portfolioObj = portfolio.toObject
+        ? portfolio.toObject({
+            virtuals: false,
+            getters: false,
+            minimize: false,
+          })
+        : portfolio;
+
+      // Get logo URL from user's userLogo field
+      let logoUrl = null;
+      if (portfolio.studentId) {
+        if (typeof portfolio.studentId === "object" && portfolio.studentId !== null) {
+          logoUrl = portfolio.studentId.userLogo || null;
+        } else {
+          // If studentId is a string, use current user's logo
+          logoUrl = user.userLogo || null;
+        }
+      } else {
+        // Fallback to current user's logo
+        logoUrl = user.userLogo || null;
+      }
+
+      portfolioObj.logo = logoUrl;
+      return portfolioObj;
+    });
+
     res.json({
       success: true,
-      data: portfolios,
-      count: portfolios.length
+      data: portfoliosWithLogo,
+      count: portfoliosWithLogo.length
     });
   } catch (error) {
     console.error('Get my portfolios error:', error);

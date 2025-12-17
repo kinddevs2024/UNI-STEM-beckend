@@ -14,6 +14,7 @@ import {
   validateSlug,
 } from "../../../lib/validation.js";
 import { createPortfolioView, hashIP } from "../../../lib/analytics-helper.js";
+import { findUserByIdWithoutPassword } from "../../../lib/user-helper.js";
 
 /**
  * @swagger
@@ -189,6 +190,22 @@ export default async function handler(req, res) {
         console.error("Error tracking view:", trackError);
       }
 
+      // Get logo URL from user's userLogo field BEFORE converting to object
+      // This must be done before toObject() because studentId might be populated as an object
+      let logoUrl = null;
+      if (portfolio.studentId) {
+        // studentId can be an object (populated by portfolio helper) or a string
+        if (typeof portfolio.studentId === "object" && portfolio.studentId !== null) {
+          logoUrl = portfolio.studentId.userLogo || null;
+        } else {
+          // If studentId is a string, try to get user data
+          const studentUser = findUserByIdWithoutPassword(portfolio.studentId);
+          if (studentUser) {
+            logoUrl = studentUser.userLogo || null;
+          }
+        }
+      }
+
       // Filter personal data if needed
       // Owners and admins always get full data, others get filtered data
       let portfolioData;
@@ -263,6 +280,9 @@ export default async function handler(req, res) {
               : null,
         };
       }
+
+      // Add logo URL to portfolio data
+      portfolioData.logo = logoUrl;
 
       res.json({
         success: true,

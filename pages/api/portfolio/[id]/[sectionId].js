@@ -9,17 +9,17 @@ import { createPortfolioView, hashIP } from "../../../../lib/analytics-helper.js
 
 /**
  * @swagger
- * /api/portfolio/{slug}/{sectionId}:
+ * /api/portfolio/{id}/{sectionId}:
  *   get:
  *     summary: Get a specific section from a portfolio
  *     tags: [Portfolio]
  *     parameters:
  *       - in: path
- *         name: slug
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: Portfolio slug
+ *         description: Portfolio slug or ID
  *       - in: path
  *         name: sectionId
  *         required: true
@@ -52,7 +52,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { slug, sectionId } = req.query;
+    const { id, sectionId } = req.query;
+    const slug = id; // Use id as slug for backward compatibility
 
     if (!slug || !sectionId) {
       return res.status(400).json({

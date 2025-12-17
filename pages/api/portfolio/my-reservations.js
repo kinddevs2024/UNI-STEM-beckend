@@ -1,6 +1,7 @@
 import { handleCORS } from '../../../lib/api-helpers.js';
 import { protect } from '../../../lib/auth.js';
 import { getReservedPortfoliosByUser } from '../../../lib/portfolio-reservation-helper.js';
+import { findUserByIdWithoutPassword } from '../../../lib/user-helper.js';
 
 /**
  * @swagger
@@ -56,10 +57,48 @@ export default async function handler(req, res) {
 
     const reservations = await getReservedPortfoliosByUser(user._id.toString(), limit, skip);
 
+    // Add logo URL to each portfolio in reservations
+    const reservationsWithLogo = reservations.map((reservation) => {
+      const portfolio = reservation.portfolio;
+      if (!portfolio) {
+        return reservation;
+      }
+
+      const portfolioObj = portfolio.toObject
+        ? portfolio.toObject({
+            virtuals: false,
+            getters: false,
+            minimize: false,
+          })
+        : portfolio;
+
+      // Get logo URL from user's userLogo field
+      let logoUrl = null;
+      if (portfolio.studentId) {
+        if (typeof portfolio.studentId === "object" && portfolio.studentId !== null) {
+          logoUrl = portfolio.studentId.userLogo || null;
+        } else {
+          // If studentId is a string, try to get user data
+          const studentUser = findUserByIdWithoutPassword(portfolio.studentId);
+          if (studentUser) {
+            logoUrl = studentUser.userLogo || null;
+          }
+        }
+      }
+
+      return {
+        ...reservation,
+        portfolio: {
+          ...portfolioObj,
+          logo: logoUrl,
+        },
+      };
+    });
+
     res.json({
       success: true,
-      data: reservations,
-      count: reservations.length
+      data: reservationsWithLogo,
+      count: reservationsWithLogo.length
     });
   } catch (error) {
     console.error('Get reserved portfolios error:', error);
