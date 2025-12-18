@@ -50,6 +50,12 @@ const olympiadSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  ownerUniversityId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+    index: true
+  },
   olympiadLogo: {
     type: String,
     trim: true
@@ -64,6 +70,21 @@ olympiadSchema.pre('save', async function(next) {
     await this.populate('questions');
     this.totalPoints = this.questions.reduce((sum, q) => sum + (q.points || 0), 0);
   }
+  
+  // Auto-populate ownerUniversityId if createdBy is a university user
+  if (this.isModified('createdBy') && this.createdBy && !this.ownerUniversityId) {
+    try {
+      const User = mongoose.models.User || mongoose.model('User');
+      const creator = await User.findById(this.createdBy);
+      if (creator && creator.role === 'university') {
+        this.ownerUniversityId = creator._id;
+      }
+    } catch (error) {
+      // Continue if user lookup fails
+      console.error('Error setting ownerUniversityId:', error);
+    }
+  }
+  
   next();
 });
 

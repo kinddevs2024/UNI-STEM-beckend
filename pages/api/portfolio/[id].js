@@ -9,6 +9,7 @@ import {
   findPortfolioBySlug,
   filterPersonalData,
 } from "../../../lib/portfolio-helper.js";
+import { calculatePortfolioVerificationStatus } from "../../../lib/verification-helper.js";
 import {
   validatePortfolioData,
   validateSlug,
@@ -219,8 +220,12 @@ export default async function handler(req, res) {
             })
           : portfolio;
       } else {
-        // Not owner - filter personal data
-        portfolioData = filterPersonalData(portfolio, user?.role || "public");
+        // Not owner - filter personal data and private blocks
+        portfolioData = filterPersonalData(
+          portfolio,
+          user?.role || "public",
+          isOwner
+        );
       }
 
       // Ensure hero field is always included with default structure
@@ -283,6 +288,11 @@ export default async function handler(req, res) {
 
       // Add logo URL to portfolio data
       portfolioData.logo = logoUrl;
+
+      // Add portfolio verification status (computed)
+      if (isOwner || isAdmin) {
+        portfolioData.verificationStatus = calculatePortfolioVerificationStatus(portfolio);
+      }
 
       res.json({
         success: true,
@@ -354,6 +364,19 @@ export default async function handler(req, res) {
         });
       }
 
+      // Check if portfolio is published (only owner can unpublish to edit)
+      if (portfolio.status === "published") {
+        if (!isOwner) {
+          return res.status(403).json({
+            success: false,
+            message: "Published portfolios can only be edited by the owner",
+          });
+        }
+        // Owner can edit published portfolios, but we recommend unpublishing first
+        // Allow the edit but warn the user
+        // (In a production app, you might want to require explicit unpublish)
+      }
+
       const portfolioData = req.body;
 
       // Validate portfolio data
@@ -410,6 +433,8 @@ export default async function handler(req, res) {
         updates.certificates = validation.portfolioData.certificates;
       if (portfolioData.animations !== undefined)
         updates.animations = validation.portfolioData.animations;
+      if (portfolioData.status !== undefined)
+        updates.status = validation.portfolioData.status;
       // Legacy support
       if (portfolioData.isPublic !== undefined)
         updates.isPublic = validation.portfolioData.isPublic;

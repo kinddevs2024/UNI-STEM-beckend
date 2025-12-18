@@ -1,5 +1,14 @@
-import { protect } from '../lib/auth.js';
-import { findPortfolioById, findPortfolioBySlug } from '../lib/portfolio-helper.js';
+import { protect } from "../lib/auth.js";
+import {
+  findPortfolioById,
+  findPortfolioBySlug,
+} from "../lib/portfolio-helper.js";
+import {
+  verifyPortfolioOwnership,
+  isAdminOrOwner,
+  checkPortfolioOwnership,
+  checkPortfolioEditable,
+} from "../lib/portfolio-ownership.js";
 
 /**
  * Middleware to check portfolio access
@@ -10,13 +19,17 @@ import { findPortfolioById, findPortfolioBySlug } from '../lib/portfolio-helper.
  */
 export async function checkPortfolioAccess(req, res, next) {
   try {
-    const portfolioId = req.query.id || req.body.id || req.query.portfolioId || req.body.portfolioId;
+    const portfolioId =
+      req.query.id ||
+      req.body.id ||
+      req.query.portfolioId ||
+      req.body.portfolioId;
     const slug = req.query.slug || req.params.slug;
 
     if (!portfolioId && !slug) {
       return res.status(400).json({
         success: false,
-        message: 'Portfolio ID or slug is required'
+        message: "Portfolio ID or slug is required",
       });
     }
 
@@ -31,7 +44,7 @@ export async function checkPortfolioAccess(req, res, next) {
     if (!portfolio) {
       return res.status(404).json({
         success: false,
-        message: 'Portfolio not found'
+        message: "Portfolio not found",
       });
     }
 
@@ -43,16 +56,12 @@ export async function checkPortfolioAccess(req, res, next) {
     const user = authResult.user || null;
     const isAuthenticated = !!user;
 
-    // Check if user is owner
-    const isOwner = isAuthenticated && 
-      user._id && 
-      portfolio.studentId && 
-      (user._id.toString() === portfolio.studentId._id?.toString() || 
-       user._id.toString() === portfolio.studentId.toString());
+    // Check if user is owner (using centralized function)
+    const isOwner =
+      isAuthenticated && verifyPortfolioOwnership(portfolio, user._id);
 
-    // Check if user is admin
-    const isAdmin = isAuthenticated && 
-      (user.role === 'admin' || user.role === 'owner');
+    // Check if user is admin (using centralized function)
+    const isAdmin = isAuthenticated && isAdminOrOwner(user);
 
     // Access control logic
     if (isPublic) {
@@ -63,14 +72,14 @@ export async function checkPortfolioAccess(req, res, next) {
           portfolio,
           canEdit: false,
           canView: true,
-          filterPersonalData: true
+          filterPersonalData: true,
         };
       } else {
         req.portfolioAccess = {
           portfolio,
           canEdit: isOwner || isAdmin,
           canView: true,
-          filterPersonalData: false
+          filterPersonalData: false,
         };
       }
     } else {
@@ -78,14 +87,14 @@ export async function checkPortfolioAccess(req, res, next) {
       if (!isAuthenticated) {
         return res.status(403).json({
           success: false,
-          message: 'This portfolio is private. Authentication required.'
+          message: "This portfolio is private. Authentication required.",
         });
       }
 
       if (!isOwner && !isAdmin) {
         return res.status(403).json({
           success: false,
-          message: 'You do not have permission to access this portfolio'
+          message: "You do not have permission to access this portfolio",
         });
       }
 
@@ -93,7 +102,7 @@ export async function checkPortfolioAccess(req, res, next) {
         portfolio,
         canEdit: isOwner || isAdmin,
         canView: true,
-        filterPersonalData: false
+        filterPersonalData: false,
       };
     }
 
@@ -101,10 +110,10 @@ export async function checkPortfolioAccess(req, res, next) {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Portfolio access check error:', error);
+    console.error("Portfolio access check error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error checking portfolio access'
+      message: "Error checking portfolio access",
     });
   }
 }
@@ -118,7 +127,7 @@ export async function requirePortfolioOwnership(req, res, next) {
     if (authResult.error) {
       return res.status(authResult.status).json({
         success: false,
-        message: authResult.error
+        message: authResult.error,
       });
     }
 
@@ -129,7 +138,7 @@ export async function requirePortfolioOwnership(req, res, next) {
     if (!portfolioId && !slug) {
       return res.status(400).json({
         success: false,
-        message: 'Portfolio ID or slug is required'
+        message: "Portfolio ID or slug is required",
       });
     }
 
@@ -144,22 +153,16 @@ export async function requirePortfolioOwnership(req, res, next) {
     if (!portfolio) {
       return res.status(404).json({
         success: false,
-        message: 'Portfolio not found'
+        message: "Portfolio not found",
       });
     }
 
-    // Check ownership or admin
-    const isOwner = user._id && 
-      portfolio.studentId && 
-      (user._id.toString() === portfolio.studentId._id?.toString() || 
-       user._id.toString() === portfolio.studentId.toString());
-
-    const isAdmin = user.role === 'admin' || user.role === 'owner';
-
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({
+    // Check ownership or admin (using centralized function)
+    const ownershipError = checkPortfolioOwnership(portfolio, user);
+    if (ownershipError) {
+      return res.status(ownershipError.status).json({
         success: false,
-        message: 'You do not have permission to modify this portfolio'
+        message: ownershipError.error,
       });
     }
 
@@ -167,10 +170,10 @@ export async function requirePortfolioOwnership(req, res, next) {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Portfolio ownership check error:', error);
+    console.error("Portfolio ownership check error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error checking portfolio ownership'
+      message: "Error checking portfolio ownership",
     });
   }
 }
@@ -191,14 +194,14 @@ export function requireStudentRole(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Authentication required'
+      message: "Authentication required",
     });
   }
 
-  if (req.user.role !== 'student') {
+  if (req.user.role !== "student") {
     return res.status(403).json({
       success: false,
-      message: 'This endpoint is only available to students'
+      message: "This endpoint is only available to students",
     });
   }
 
@@ -212,15 +215,15 @@ export function requireUniversityOrAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Authentication required'
+      message: "Authentication required",
     });
   }
 
-  const allowedRoles = ['university', 'admin', 'owner'];
+  const allowedRoles = ["university", "admin", "owner"];
   if (!allowedRoles.includes(req.user.role)) {
     return res.status(403).json({
       success: false,
-      message: 'This endpoint requires university or admin role'
+      message: "This endpoint requires university or admin role",
     });
   }
 
@@ -232,6 +235,5 @@ export default {
   requirePortfolioOwnership,
   allowPublicPortfolioAccess,
   requireStudentRole,
-  requireUniversityOrAdmin
+  requireUniversityOrAdmin,
 };
-

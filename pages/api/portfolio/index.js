@@ -117,6 +117,7 @@ export default async function handler(req, res) {
       slug: slugValidation.slug,
       visibility: validation.portfolioData.visibility || "private",
       layout: validation.portfolioData.layout || "single-page",
+      status: validation.portfolioData.status || "draft", // Default to draft
       theme: validation.portfolioData.theme || {
         name: "modern",
         colors: {},

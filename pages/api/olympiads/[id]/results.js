@@ -1,4 +1,5 @@
 import { connectDB } from '../../../../lib/json-db.js';
+import connectMongoDB from '../../../../lib/mongodb.js';
 import { findOlympiadById } from '../../../../lib/olympiad-helper.js';
 import { findQuestionsByOlympiadId } from '../../../../lib/question-helper.js';
 import { findResultByUserAndOlympiad, findResultsByOlympiadId } from '../../../../lib/result-helper.js';
@@ -6,6 +7,7 @@ import { findSubmissionsByUserAndOlympiad, findSubmissionsByOlympiadId } from '.
 import { findUserById } from '../../../../lib/user-helper.js';
 import { protect, authorize } from '../../../../lib/auth.js';
 import { analyzeText } from '../../../../lib/text-analysis.js';
+import Olympiad from '../../../../models/Olympiad.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -26,6 +28,7 @@ export default async function handler(req, res) {
     const userId = authResult.user._id;
     const userRole = authResult.user.role;
     const isAdminOrOwner = userRole === 'admin' || userRole === 'owner' || userRole === 'resolter';
+    const isUniversity = userRole === 'university';
 
     const olympiad = findOlympiadById(olympiadId);
     if (!olympiad) {
@@ -33,6 +36,21 @@ export default async function handler(req, res) {
         success: false,
         message: 'Olympiad not found' 
       });
+    }
+
+    // Check university ownership for university users
+    let isOlympiadOwner = false;
+    if (isUniversity) {
+      try {
+        await connectMongoDB();
+        const olympiadDoc = await Olympiad.findById(olympiadId).lean();
+        if (olympiadDoc && olympiadDoc.ownerUniversityId) {
+          isOlympiadOwner = String(olympiadDoc.ownerUniversityId) === String(userId);
+        }
+      } catch (error) {
+        console.error('Error checking olympiad ownership:', error);
+        // Default to not owner on error
+      }
     }
 
     // If admin/owner, return all results

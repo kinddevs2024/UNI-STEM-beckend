@@ -1,4 +1,5 @@
 import { connectDB } from '../../../lib/json-db.js';
+import connectMongoDB from '../../../lib/mongodb.js';
 import { findOlympiadById } from '../../../lib/olympiad-helper.js';
 import { findQuestionsByOlympiadId } from '../../../lib/question-helper.js';
 import { findResultByUserAndOlympiad, findResultsByOlympiadId } from '../../../lib/result-helper.js';
@@ -6,6 +7,7 @@ import { findSubmissionsByUserAndOlympiad, findSubmissionsByOlympiadId } from '.
 import { findUserById } from '../../../lib/user-helper.js';
 import { protect, authorize } from '../../../lib/auth.js';
 import { analyzeText } from '../../../lib/text-analysis.js';
+import Olympiad from '../../../models/Olympiad.js';
 
 export default async function handler(req, res) {
   // Set cache-control headers to prevent caching
@@ -40,6 +42,7 @@ export default async function handler(req, res) {
     const userId = authResult.user._id;
     const userRole = authResult.user.role;
     const isAdminOrOwner = userRole === 'admin' || userRole === 'owner' || userRole === 'resolter';
+    const isUniversity = userRole === 'university';
 
     const olympiad = findOlympiadById(olympiadId);
     if (!olympiad) {
@@ -47,6 +50,104 @@ export default async function handler(req, res) {
         success: false,
         message: 'Olympiad not found' 
       });
+    }
+
+    // Check university ownership for university users
+    let isOlympiadOwner = false;
+    if (isUniversity) {
+      try {
+        await connectMongoDB();
+        const olympiadDoc = await Olympiad.findById(olympiadId).lean();
+        if (olympiadDoc && olympiadDoc.ownerUniversityId) {
+          isOlympiadOwner = String(olympiadDoc.ownerUniversityId) === String(userId);
+        }
+      } catch (error) {
+        console.error('Error checking olympiad ownership:', error);
+        // Default to not owner on error
+      }
+    }
+
+    // Handle university users
+    if (isUniversity) {
+      const allResults = findResultsByOlympiadId(olympiadId)
+        .sort((a, b) => {
+          if (b.totalScore !== a.totalScore) {
+            return b.totalScore - a.totalScore;
+          }
+          return new Date(a.completedAt) - new Date(b.completedAt);
+        });
+
+      // If university owns the olympiad, return full data
+      if (isOlympiadOwner) {
+        const allResultsWithUsers = allResults.map((result, index) => {
+          const user = findUserById(result.userId);
+          let position = '';
+          if (index === 0) position = '🥇 1st Place';
+          else if (index === 1) position = '🥈 2nd Place';
+          else if (index === 2) position = '🥉 3rd Place';
+          else position = `${index + 1}th Place`;
+
+          return {
+            rank: index + 1,
+            position,
+            userId: result.userId,
+            userName: user ? user.name : 'Unknown',
+            userEmail: user ? user.email : 'Unknown',
+            score: result.totalScore,
+            totalPoints: result.maxScore,
+            percentage: Math.round(result.percentage * 100) / 100,
+            completedAt: result.completedAt,
+            timeSpent: result.timeSpent,
+            visible: result.visible !== false,
+            status: result.status || 'active',
+            _id: result._id,
+          };
+        });
+
+        return res.json({
+          success: true,
+          olympiadId: olympiad._id,
+          olympiadTitle: olympiad.title,
+          olympiadType: olympiad.type,
+          olympiadLogo: olympiad.olympiadLogo || null,
+          allResults: allResultsWithUsers,
+          totalParticipants: allResults.length,
+          isUniversityView: true,
+          isOwner: true,
+        });
+      } else {
+        // University doesn't own olympiad - return limited public data
+        const limitedResults = allResults.map((result, index) => {
+          let position = '';
+          if (index === 0) position = '🥇 1st Place';
+          else if (index === 1) position = '🥈 2nd Place';
+          else if (index === 2) position = '🥉 3rd Place';
+          else position = `${index + 1}th Place`;
+
+          return {
+            rank: index + 1,
+            position,
+            score: result.totalScore,
+            totalPoints: result.maxScore,
+            percentage: Math.round(result.percentage * 100) / 100,
+            completedAt: result.completedAt,
+            // No userId, userName, userEmail, or detailed answers
+          };
+        });
+
+        return res.json({
+          success: true,
+          olympiadId: olympiad._id,
+          olympiadTitle: olympiad.title,
+          olympiadType: olympiad.type,
+          olympiadLogo: olympiad.olympiadLogo || null,
+          allResults: limitedResults,
+          totalParticipants: allResults.length,
+          isUniversityView: true,
+          isOwner: false,
+          message: 'Limited data: Full results available only for olympiads you own',
+        });
+      }
     }
 
     // If admin/owner, return all results

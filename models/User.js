@@ -69,11 +69,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  role: {
-    type: String,
-    enum: ['student', 'admin', 'owner', 'resolter', 'school-admin', 'school-teacher', 'university'],
-    default: 'student'
-  },
+    role: {
+      type: String,
+      enum: ['student', 'admin', 'owner', 'resolter', 'school-admin', 'school-teacher', 'university', 'checker'],
+      default: 'student'
+    },
   profile: {
     avatar: String,
     phone: String,

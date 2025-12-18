@@ -67,9 +67,19 @@ const portfolioSchema = new mongoose.Schema(
       index: true,
     },
     layout: {
-      type: String,
-      enum: ["single-page", "multi-page"],
+      // Support both legacy string format and new object format
+      // Legacy: "single-page" or "multi-page" (string)
+      // New: { type: "single-page"|"multi-page", blocks: [...] }
+      type: mongoose.Schema.Types.Mixed,
       default: "single-page",
+      // New block-based structure (when layout is an object)
+      // Access via layout.blocks when layout is an object
+    },
+    status: {
+      type: String,
+      enum: ["draft", "published"],
+      default: "draft",
+      index: true,
     },
     theme: {
       name: {
@@ -131,6 +141,39 @@ const portfolioSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    // Portfolio-level verification
+    verificationStatus: {
+      type: String,
+      enum: ["unverified", "pending", "verified", "rejected"],
+      default: "unverified",
+      index: true,
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    verifiedAt: {
+      type: Date,
+      default: null,
+    },
+    rejectionReason: {
+      type: String,
+      trim: true,
+    },
+    // ILS Level (1-9)
+    ilsLevel: {
+      type: Number,
+      min: 1,
+      max: 9,
+      default: 1,
+    },
+    // Portfolio Rating (calculated)
+    portfolioRating: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -142,6 +185,10 @@ portfolioSchema.index({ studentId: 1, visibility: 1 });
 portfolioSchema.index({ studentId: 1, isPublic: 1 }); // Legacy support
 portfolioSchema.index({ slug: 1, visibility: 1 });
 portfolioSchema.index({ slug: 1, isPublic: 1 }); // Legacy support
+portfolioSchema.index({ studentId: 1, status: 1 });
+portfolioSchema.index({ "layout.blocks.id": 1 }); // For block queries
+portfolioSchema.index({ verificationStatus: 1, portfolioRating: -1 }); // For ratings/verification queries
+portfolioSchema.index({ portfolioRating: -1 }); // For global ratings
 
 const Portfolio =
   mongoose.models.Portfolio || mongoose.model("Portfolio", portfolioSchema);

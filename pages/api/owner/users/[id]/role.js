@@ -28,10 +28,10 @@ export default async function handler(req, res) {
     const { id } = req.query;
     const { role } = req.body;
 
-    if (!role || !['student', 'admin', 'owner', 'resolter', 'school-admin', 'school-teacher'].includes(role)) {
+    if (!role || !['student', 'admin', 'owner', 'resolter', 'school-admin', 'school-teacher', 'university', 'checker'].includes(role)) {
       return res.status(400).json({ 
         success: false,
-        message: 'Please provide a valid role (student, admin, owner, resolter, school-admin, school-teacher)' 
+        message: 'Please provide a valid role (student, admin, owner, resolter, school-admin, school-teacher, university, checker)' 
       });
     }
 
