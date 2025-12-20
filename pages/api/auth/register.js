@@ -44,17 +44,12 @@ if (!process.env.JWT_SECRET) {
  *             type: object
  *             required:
  *               - email
- *               - password
  *               - name
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
  *                 example: user@example.com
- *               password:
- *                 type: string
- *                 minLength: 6
- *                 example: password123
  *               name:
  *                 type: string
  *                 example: John Doe
@@ -107,7 +102,6 @@ export default async function handler(req, res) {
       role, 
       firstName, 
       secondName, 
-      gmail, 
       tel, 
       address, 
       schoolName, 
@@ -118,10 +112,10 @@ export default async function handler(req, res) {
     } = req.body;
 
     // Validate required fields
-    if (!name || !email || !password) {
+    if (!name || !email) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide name, email, and password',
+        message: 'Please provide name and email',
       });
     }
 
@@ -134,13 +128,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters',
-      });
-    }
 
     // Check if user exists
     const userExists = findUserByEmail(email);
@@ -177,7 +164,6 @@ export default async function handler(req, res) {
       role: finalRole,
       firstName,
       secondName,
-      gmail,
       tel,
       address,
       schoolName: (finalRole === 'student' || finalRole === 'school-teacher') ? schoolName : null,

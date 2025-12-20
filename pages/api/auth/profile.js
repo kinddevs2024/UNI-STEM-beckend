@@ -2,7 +2,6 @@ import { connectDB } from '../../../lib/json-db.js';
 import { findUserById, updateUser, findUserByEmail } from '../../../lib/user-helper.js';
 import { protect } from '../../../lib/auth.js';
 import { handleCORS } from '../../../middleware/cors.js';
-import bcrypt from 'bcryptjs';
 
 /**
  * Update user profile
@@ -42,7 +41,6 @@ export default async function handler(req, res) {
       firstName,
       secondName,
       email,
-      gmail,
       tel,
       address,
       schoolName,
@@ -50,8 +48,6 @@ export default async function handler(req, res) {
       dateBorn,
       gender,
       userLogo,
-      password,
-      profile,
     } = req.body;
 
     // Prepare updates object
@@ -81,22 +77,6 @@ export default async function handler(req, res) {
       updates.email = email.toLowerCase().trim();
     }
 
-    // Gmail validation
-    if (gmail !== undefined) {
-      if (gmail && gmail.trim()) {
-        const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-        if (!emailRegex.test(gmail)) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Please provide a valid Gmail address' 
-          });
-        }
-        updates.gmail = gmail.toLowerCase().trim();
-      } else {
-        updates.gmail = null;
-      }
-    }
-
     if (tel !== undefined) updates.tel = tel?.trim() || null;
     if (address !== undefined) updates.address = address?.trim() || null;
     if (dateBorn !== undefined) {
@@ -112,15 +92,8 @@ export default async function handler(req, res) {
       updates.gender = gender || null;
     }
     if (userLogo !== undefined) updates.userLogo = userLogo?.trim() || null;
-    if (profile !== undefined) {
-      // Merge profile object to preserve existing fields
-      updates.profile = {
-        avatar: currentUser.profile?.avatar || null,
-        phone: currentUser.profile?.phone || null,
-        institution: currentUser.profile?.institution || null,
-        ...profile, // Apply updates to profile
-      };
-    }
+    // Handle cookies separately
+    if (req.body.cookies !== undefined) updates.cookies = req.body.cookies;
 
     // School information - only for students and school-teacher
     if (currentUser.role === 'student' || currentUser.role === 'school-teacher') {
@@ -131,18 +104,6 @@ export default async function handler(req, res) {
         success: false,
         message: 'School information can only be updated for students or school-teacher' 
       });
-    }
-
-    // Password update
-    if (password !== undefined) {
-      if (password.length < 6) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Password must be at least 6 characters' 
-        });
-      }
-      const salt = await bcrypt.genSalt(10);
-      updates.password = await bcrypt.hash(password, salt);
     }
 
     // Don't allow users to change their own role through this endpoint
@@ -164,13 +125,10 @@ export default async function handler(req, res) {
     // Update user
     const updatedUser = updateUser(userId, updates);
 
-    // Return updated user without password
-    const { password: _, ...userWithoutPassword } = updatedUser;
-
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      user: userWithoutPassword,
+      user: updatedUser,
     });
   } catch (error) {
     console.error('Update profile error:', error);

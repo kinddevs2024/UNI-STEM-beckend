@@ -47,10 +47,7 @@ export default async function handler(req, res) {
 
     const user = authResult.user;
 
-    // Return all user fields except password
-    const { password, ...userWithoutPassword } = user;
-
-    res.json(userWithoutPassword);
+    res.json(user);
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ 

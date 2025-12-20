@@ -145,7 +145,7 @@ export default async function handler(req, res) {
 
     // Query portfolios
     const portfolios = await Portfolio.find(filter)
-      .populate("studentId", "name email gmail tel profile")
+      .populate("studentId", "name email tel profile")
       .sort({ portfolioRating: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)

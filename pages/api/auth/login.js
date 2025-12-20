@@ -1,5 +1,5 @@
 import { connectDB } from '../../../lib/json-db.js';
-import { findUserByEmail, comparePassword } from '../../../lib/user-helper.js';
+import { findUserByEmail } from '../../../lib/user-helper.js';
 import { generateToken } from '../../../lib/auth.js';
 import { handleCORS } from '../../../middleware/cors.js';
 
@@ -17,15 +17,11 @@ import { handleCORS } from '../../../middleware/cors.js';
  *             type: object
  *             required:
  *               - email
- *               - password
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
  *                 example: user@example.com
- *               password:
- *                 type: string
- *                 example: password123
  *     responses:
  *       200:
  *         description: Login successful
@@ -62,13 +58,13 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
-    const { email, password } = req.body;
+    const { email } = req.body;
 
-    // Validate email & password
-    if (!email || !password) {
+    // Validate email
+    if (!email) {
       return res.status(400).json({ 
         success: false,
-        message: 'Please provide email and password' 
+        message: 'Please provide email' 
       });
     }
 
@@ -81,16 +77,20 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if password matches
-    const isMatch = await comparePassword(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ 
-        success: false,
-        message: 'Invalid credentials' 
-      });
-    }
-
     const token = generateToken(user._id);
+
+    // Check if user has agreed to cookies
+    // If cookies is true, don't show/set cookies (cookies already agreed/active)
+    const cookiesAgreed = user.cookies === true || user.cookies === 'all' || user.cookies === 'accepted';
+    
+    // Only set cookie consent cookie if user has not agreed to cookies
+    // If cookies is true, skip setting the cookie
+    if (!cookiesAgreed) {
+      // Set a cookie to track that we're requesting cookie consent
+      res.setHeader('Set-Cookie', [
+        `cookie_consent=requested; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`, // 24 hours
+      ]);
+    }
 
     res.json({
       token,
@@ -100,6 +100,7 @@ export default async function handler(req, res) {
         name: user.name,
         role: user.role,
       },
+      cookiesAgreed: cookiesAgreed,
     });
   } catch (error) {
     console.error('Login error:', error);
