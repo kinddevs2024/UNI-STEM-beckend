@@ -4,17 +4,17 @@ const certificateSchema = new mongoose.Schema(
   {
     fileUrl: {
       type: String,
-      required: true,
+      required: false, // Always optional - validation handled in pre-save hook
       trim: true,
     },
     fileName: {
       type: String,
-      required: true,
+      required: false, // Always optional - validation handled in pre-save hook
       trim: true,
     },
     fileType: {
       type: String,
-      required: true,
+      required: false, // Always optional - validation handled in pre-save hook
       trim: true,
     },
     title: {
@@ -33,8 +33,13 @@ const certificateSchema = new mongoose.Schema(
       default: {},
     },
   },
-  { _id: true }
+  { _id: true, validateBeforeSave: true }
 );
+
+// Note: Certificate fields are optional in the schema
+// Pre-save hook filters out incomplete new certificates (without _id)
+// Existing certificates (with _id) are preserved even if incomplete
+// Application-level validation in validation.js ensures new certificates have required fields
 
 const portfolioSchema = new mongoose.Schema(
   {
@@ -112,7 +117,9 @@ const portfolioSchema = new mongoose.Schema(
     hero: {
       title: String,
       subtitle: String,
+      description: String,
       image: String,
+      avatar: String,
       ctaText: String,
       ctaLink: String,
     },
@@ -123,6 +130,47 @@ const portfolioSchema = new mongoose.Schema(
     certificates: {
       type: [certificateSchema],
       default: [],
+    },
+    // New portfolio features
+    imageGallery: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    seo: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    socialLinks: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    sharing: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    analytics: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    customCode: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    favicon: {
+      type: String,
+      default: "",
+    },
+    background: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    fonts: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    statistics: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     animations: {
       enabled: {
@@ -179,6 +227,42 @@ const portfolioSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Pre-save hook to handle incomplete certificates during updates
+portfolioSchema.pre("save", function (next) {
+  // Only process if certificates array exists and has items
+  if (
+    this.certificates &&
+    Array.isArray(this.certificates) &&
+    this.certificates.length > 0
+  ) {
+    // Filter out incomplete certificates that don't have _id
+    // This allows existing certificates (with _id) to be preserved even if incomplete
+    const filtered = this.certificates.filter((cert) => {
+      // Handle both plain objects and Mongoose subdocuments
+      const hasId = cert._id || (cert.id && cert.id.toString) || cert.id;
+      const hasAllFields = cert.fileUrl && cert.fileName && cert.fileType;
+
+      // Keep certificates with all required fields
+      if (hasAllFields) {
+        return true;
+      }
+      // Keep existing certificates (with _id) even if incomplete
+      if (hasId) {
+        return true;
+      }
+      // Filter out new incomplete certificates
+      return false;
+    });
+
+    // Only update if filtering changed the array
+    if (filtered.length !== this.certificates.length) {
+      this.certificates = filtered;
+      this.markModified("certificates");
+    }
+  }
+  next();
+});
 
 // Index for efficient queries
 portfolioSchema.index({ studentId: 1, visibility: 1 });

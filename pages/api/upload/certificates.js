@@ -78,7 +78,18 @@ export default async function handler(req, res) {
     }
 
     // Parse form data
-    const { fields, files } = await parseForm(req, "./uploads/certificates");
+    let fields, files;
+    try {
+      const parsed = await parseForm(req, "./uploads/certificates");
+      fields = parsed.fields;
+      files = parsed.files;
+    } catch (parseError) {
+      console.error("Form parsing error:", parseError);
+      return res.status(400).json({
+        success: false,
+        message: `Error parsing form data: ${parseError.message}`,
+      });
+    }
 
     // Get file (handle both single file and array)
     // Try different common field names
@@ -95,10 +106,14 @@ export default async function handler(req, res) {
     }
 
     if (!file) {
+      console.error("No file found in upload. Available files:", Object.keys(files));
       return res.status(400).json({
         success: false,
         message:
           'No file provided. Please ensure the file is sent in a field named "file", "certificate", "upload", "image", or "pdf".',
+        debug: process.env.NODE_ENV === "development" ? {
+          receivedFields: Object.keys(files),
+        } : undefined,
       });
     }
 
@@ -110,7 +125,10 @@ export default async function handler(req, res) {
       "application/pdf",
     ];
 
-    if (!allowedMimeTypes.includes(file.mimetype)) {
+    // Get mimetype (handle different formidable versions)
+    const mimetype = file.mimetype || file.type;
+    
+    if (!mimetype || !allowedMimeTypes.includes(mimetype)) {
       // Clean up uploaded file
       if (fs.existsSync(file.filepath)) {
         fs.unlinkSync(file.filepath);
@@ -126,9 +144,12 @@ export default async function handler(req, res) {
     const maxSizeImages = 10 * 1024 * 1024; // 10MB for images
     const maxSizePDF = 20 * 1024 * 1024; // 20MB for PDFs
     const maxSize =
-      file.mimetype === "application/pdf" ? maxSizePDF : maxSizeImages;
+      mimetype === "application/pdf" ? maxSizePDF : maxSizeImages;
+    
+    // Get file size (handle different formidable versions)
+    const fileSize = file.size || (file.filepath && fs.existsSync(file.filepath) ? fs.statSync(file.filepath).size : 0);
 
-    if (file.size > maxSize) {
+    if (fileSize > maxSize) {
       // Clean up uploaded file
       if (fs.existsSync(file.filepath)) {
         fs.unlinkSync(file.filepath);
@@ -141,21 +162,34 @@ export default async function handler(req, res) {
       });
     }
 
+    // Ensure file has required properties
+    const fileToSave = {
+      filepath: file.filepath || file.path,
+      originalFilename: file.originalFilename || file.name,
+      mimetype: mimetype,
+      size: fileSize,
+    };
+    
     // Save file
     const savedFile = await saveFile(
-      file,
+      fileToSave,
       "./uploads/certificates",
       user._id.toString()
     );
 
-    // Generate file URL
-    const fileUrl = `/api/uploads/${savedFile.name}`;
+    // Generate file URL - include the full path from uploads directory
+    // savedFile.name is like "users/{userId}/{fileName}"
+    // But file is actually at "certificates/users/{userId}/{fileName}"
+    // So we need to include "certificates" in the URL
+    const fileUrl = `/api/uploads/certificates/${savedFile.name}`;
 
     res.json({
       success: true,
       message: "Certificate uploaded successfully",
       data: {
         fileUrl,
+        certificateUrl: fileUrl, // Alias for compatibility
+        url: fileUrl, // Alias for compatibility
         fileName: savedFile.name,
         fileType: savedFile.type,
         size: savedFile.size,

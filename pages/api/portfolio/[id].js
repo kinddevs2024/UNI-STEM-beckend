@@ -124,10 +124,22 @@ export default async function handler(req, res) {
         });
       }
 
-      // Check authentication
-      const authResult = await protect(req);
-      const user = authResult.user || null;
-      const isAuthenticated = !!user;
+      // Check authentication (optional - public portfolios don't require authentication)
+      // protect() returns { error, status } if no token, or { user } if authenticated
+      let user = null;
+      let isAuthenticated = false;
+      try {
+        const authResult = await protect(req);
+        // Only set user if authResult has a user property (not an error)
+        if (authResult && authResult.user) {
+          user = authResult.user;
+          isAuthenticated = true;
+        }
+        // If authResult has an error, that's fine - user stays null (unauthenticated)
+      } catch (authError) {
+        // Authentication failed or no token - that's OK for public portfolios
+        // user remains null, isAuthenticated remains false
+      }
 
       // Check if user is owner
       // studentId can be a string (raw) or an object (populated with user data)
@@ -155,18 +167,25 @@ export default async function handler(req, res) {
         isAuthenticated && (user.role === "admin" || user.role === "owner");
 
       // Access control - check both new visibility and legacy isPublic
+      // Public and unlisted portfolios are accessible to everyone (including unauthenticated users)
       const isPublic =
         portfolio.visibility === "public" || portfolio.isPublic === true;
       const isUnlisted = portfolio.visibility === "unlisted";
 
-      // Unlisted portfolios are only accessible via direct link (slug/ID), not in public listings
-      // Private portfolios require authentication and ownership
-      if (!isPublic && !isUnlisted && !isOwner && !isAdmin) {
+      // Allow access if:
+      // 1. Portfolio is public (anyone can view)
+      // 2. Portfolio is unlisted (accessible via direct link)
+      // 3. User is owner
+      // 4. User is admin
+      // Only block if portfolio is private AND user is not owner/admin
+      if (portfolio.visibility === "private" && !isOwner && !isAdmin) {
         return res.status(403).json({
           success: false,
           message: "This portfolio is private. Authentication required.",
         });
       }
+
+      // Public and unlisted portfolios are accessible to everyone (no authentication required)
 
       // Track view (async, don't wait)
       try {
@@ -196,7 +215,10 @@ export default async function handler(req, res) {
       let logoUrl = null;
       if (portfolio.studentId) {
         // studentId can be an object (populated by portfolio helper) or a string
-        if (typeof portfolio.studentId === "object" && portfolio.studentId !== null) {
+        if (
+          typeof portfolio.studentId === "object" &&
+          portfolio.studentId !== null
+        ) {
           logoUrl = portfolio.studentId.userLogo || null;
         } else {
           // If studentId is a string, try to get user data
@@ -245,18 +267,35 @@ export default async function handler(req, res) {
         portfolioData.hero = heroFromPortfolio || {
           title: null,
           subtitle: null,
+          description: null,
           image: null,
+          avatar: null,
           ctaText: null,
           ctaLink: null,
         };
       }
+
+      // Ensure all new portfolio features are included for public viewing
+      // These features should be available to everyone viewing the portfolio
+      portfolioData.imageGallery = portfolio.imageGallery || [];
+      portfolioData.seo = portfolio.seo || {};
+      portfolioData.socialLinks = portfolio.socialLinks || [];
+      portfolioData.sharing = portfolio.sharing || {};
+      portfolioData.analytics = portfolio.analytics || {};
+      portfolioData.customCode = portfolio.customCode || {};
+      portfolioData.favicon = portfolio.favicon || "";
+      portfolioData.background = portfolio.background || {};
+      portfolioData.fonts = portfolio.fonts || {};
+      portfolioData.statistics = portfolio.statistics || {};
 
       // Ensure hero has all required fields with proper structure
       if (!portfolioData.hero || typeof portfolioData.hero !== "object") {
         portfolioData.hero = {
           title: null,
           subtitle: null,
+          description: null,
           image: null,
+          avatar: null,
           ctaText: null,
           ctaLink: null,
         };
@@ -271,9 +310,17 @@ export default async function handler(req, res) {
             portfolioData.hero.subtitle !== undefined
               ? portfolioData.hero.subtitle
               : null,
+          description:
+            portfolioData.hero.description !== undefined
+              ? portfolioData.hero.description
+              : null,
           image:
             portfolioData.hero.image !== undefined
               ? portfolioData.hero.image
+              : null,
+          avatar:
+            portfolioData.hero.avatar !== undefined
+              ? portfolioData.hero.avatar
               : null,
           ctaText:
             portfolioData.hero.ctaText !== undefined
@@ -291,7 +338,8 @@ export default async function handler(req, res) {
 
       // Add portfolio verification status (computed)
       if (isOwner || isAdmin) {
-        portfolioData.verificationStatus = calculatePortfolioVerificationStatus(portfolio);
+        portfolioData.verificationStatus =
+          calculatePortfolioVerificationStatus(portfolio);
       }
 
       res.json({
@@ -439,6 +487,52 @@ export default async function handler(req, res) {
       if (portfolioData.isPublic !== undefined)
         updates.isPublic = validation.portfolioData.isPublic;
 
+      // New portfolio features - ALWAYS extract from original portfolioData (before validation)
+      // Validation might not preserve these fields, so we use the original request data
+      if (portfolioData.imageGallery !== undefined) {
+        updates.imageGallery = Array.isArray(portfolioData.imageGallery)
+          ? portfolioData.imageGallery
+          : [];
+      }
+
+      if (portfolioData.seo !== undefined) {
+        updates.seo = portfolioData.seo;
+      }
+
+      if (portfolioData.socialLinks !== undefined) {
+        updates.socialLinks = Array.isArray(portfolioData.socialLinks)
+          ? portfolioData.socialLinks
+          : [];
+      }
+
+      if (portfolioData.sharing !== undefined) {
+        updates.sharing = portfolioData.sharing;
+      }
+
+      if (portfolioData.analytics !== undefined) {
+        updates.analytics = portfolioData.analytics;
+      }
+
+      if (portfolioData.customCode !== undefined) {
+        updates.customCode = portfolioData.customCode;
+      }
+
+      if (portfolioData.favicon !== undefined) {
+        updates.favicon = portfolioData.favicon;
+      }
+
+      if (portfolioData.background !== undefined) {
+        updates.background = portfolioData.background;
+      }
+
+      if (portfolioData.fonts !== undefined) {
+        updates.fonts = portfolioData.fonts;
+      }
+
+      if (portfolioData.statistics !== undefined) {
+        updates.statistics = portfolioData.statistics;
+      }
+
       // Update portfolio
       const updatedPortfolio = await updatePortfolio(id, updates);
 
@@ -456,11 +550,25 @@ export default async function handler(req, res) {
         updatedData.hero = updatedPortfolio.hero || {
           title: null,
           subtitle: null,
+          description: null,
           image: null,
+          avatar: null,
           ctaText: null,
           ctaLink: null,
         };
       }
+
+      // Ensure all new portfolio features are included in response
+      updatedData.imageGallery = updatedPortfolio.imageGallery || [];
+      updatedData.seo = updatedPortfolio.seo || {};
+      updatedData.socialLinks = updatedPortfolio.socialLinks || [];
+      updatedData.sharing = updatedPortfolio.sharing || {};
+      updatedData.analytics = updatedPortfolio.analytics || {};
+      updatedData.customCode = updatedPortfolio.customCode || {};
+      updatedData.favicon = updatedPortfolio.favicon || "";
+      updatedData.background = updatedPortfolio.background || {};
+      updatedData.fonts = updatedPortfolio.fonts || {};
+      updatedData.statistics = updatedPortfolio.statistics || {};
 
       res.json({
         success: true,
