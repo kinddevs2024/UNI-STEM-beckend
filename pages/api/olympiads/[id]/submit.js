@@ -6,6 +6,14 @@ import { createResult, findResultByUserAndOlympiad, hasSubmittedThisMonth } from
 import { deleteDraft } from '../../../../lib/draft-helper.js';
 import { protect } from '../../../../lib/auth.js';
 import { scoreEssay } from '../../../../lib/text-analysis.js';
+import connectMongoDB from '../../../../lib/mongodb.js';
+import Attempt from '../../../../models/Attempt.js';
+import ProctoringSession from '../../../../models/ProctoringSession.js';
+import { validateAttemptActive } from '../../../../lib/anti-cheat-validator.js';
+import { validateTimeNotExpired, isTimeExpired } from '../../../../lib/timer-service.js';
+import { runPostAttemptVerification } from '../../../../lib/post-attempt-verification.js';
+import { calculateAndStoreTrustScore } from '../../../../lib/anti-cheat-scoring.js';
+import { createAuditLog } from '../../../../lib/audit-logger.js';
 
 /**
  * @swagger
@@ -74,10 +82,53 @@ export default async function handler(req, res) {
     }
 
     await connectDB();
+    await connectMongoDB();
 
     const { answers, essay, content, answer } = req.body || {};
     const { id: olympiadId } = req.query;
     const userId = authResult.user._id;
+
+    // Find attempt (for anti-cheat validation)
+    const attempt = await Attempt.findOne({
+      userId,
+      olympiadId
+    });
+
+    if (attempt) {
+      // Check if time expired
+      if (isTimeExpired(attempt.endsAt)) {
+        attempt.status = 'time_expired';
+        await attempt.save();
+        return res.status(400).json({ 
+          success: false,
+          message: 'Time has expired. Submission not allowed.',
+          code: 'TIME_EXPIRED'
+        });
+      }
+
+      // Validate attempt is active
+      const validation = validateAttemptActive(attempt);
+      if (!validation.valid) {
+        return res.status(400).json({ 
+          success: false,
+          message: validation.error,
+          code: validation.code
+        });
+      }
+
+      // Validate time not expired
+      try {
+        validateTimeNotExpired(attempt.endsAt);
+      } catch (error) {
+        attempt.status = 'time_expired';
+        await attempt.save();
+        return res.status(400).json({ 
+          success: false,
+          message: 'Time has expired',
+          code: 'TIME_EXPIRED'
+        });
+      }
+    }
 
     // Validate request body
     if (!req.body || (typeof req.body !== 'object')) {
@@ -124,8 +175,18 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if user has already submitted this olympiad this month
-    if (hasSubmittedThisMonth(userId, olympiadId)) {
+    // Check if attempt exists (anti-cheat validation takes precedence)
+    if (attempt && attempt.status === 'completed') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'You have already completed this attempt',
+        code: 'ATTEMPT_ALREADY_COMPLETED'
+      });
+    }
+
+    // Check if user has already submitted this olympiad this month (legacy check)
+    // Note: With anti-cheat system, this should be checked via attempt instead
+    if (!attempt && hasSubmittedThisMonth(userId, olympiadId)) {
       const existingResult = findResultByUserAndOlympiad(userId, olympiadId);
       const completedDate = existingResult ? new Date(existingResult.completedAt) : new Date();
       const nextMonth = new Date(completedDate);
@@ -436,6 +497,67 @@ export default async function handler(req, res) {
     } catch (error) {
       console.warn('Failed to delete draft after submission:', error);
       // Don't fail the submission if draft deletion fails
+    }
+
+    // Update attempt status if exists
+    if (attempt) {
+      attempt.submittedAt = new Date();
+      attempt.completedAt = new Date();
+
+      // Run post-attempt verification
+      const verificationResult = await runPostAttemptVerification(attempt._id, olympiad.duration);
+      
+      // Calculate and store trust score
+      const trustScoreResult = await calculateAndStoreTrustScore(attempt._id);
+      
+      // Reload attempt to get updated trust score and verification results
+      const updatedAttempt = await Attempt.findById(attempt._id);
+      
+      // Set status based on verification and trust score
+      if (verificationResult.passed && updatedAttempt.trustClassification !== 'invalid') {
+        attempt.status = 'completed';
+      } else if (!verificationResult.passed) {
+        attempt.status = 'verification_failed';
+      } else if (updatedAttempt.trustClassification === 'invalid') {
+        attempt.status = 'auto_disqualified';
+      } else {
+        attempt.status = 'completed'; // Default to completed even if suspicious
+      }
+      
+      // Copy trust score and verification fields from updated attempt
+      attempt.trustScore = updatedAttempt.trustScore;
+      attempt.trustClassification = updatedAttempt.trustClassification;
+      attempt.scoringBreakdown = updatedAttempt.scoringBreakdown;
+      attempt.verificationStatus = updatedAttempt.verificationStatus;
+      attempt.verificationResults = updatedAttempt.verificationResults;
+
+      await attempt.save();
+
+      // Update proctoring session
+      const ProctoringSession = (await import('../../../../models/ProctoringSession.js')).default;
+      const proctoringSession = await ProctoringSession.findOne({ attemptId: attempt._id });
+      if (proctoringSession) {
+        proctoringSession.status = 'completed';
+        await proctoringSession.save();
+      }
+
+      // Create audit log
+      await createAuditLog({
+        attemptId: attempt._id,
+        userId,
+        olympiadId,
+        eventType: 'submit',
+        metadata: {
+          totalScore,
+          maxScore: olympiad.totalPoints,
+          percentage: result.percentage,
+          submissionCount: submissions.length,
+          trustScore: updatedAttempt.trustScore,
+          trustClassification: updatedAttempt.trustClassification,
+          verificationPassed: verificationResult.passed
+        },
+        req
+      });
     }
 
     res.json({
