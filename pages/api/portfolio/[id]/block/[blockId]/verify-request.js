@@ -1,15 +1,15 @@
-import { handleCORS } from "../../../../../lib/api-helpers.js";
-import { protect } from "../../../../../lib/auth.js";
+import { handleCORS } from "../../../../../../lib/api-helpers.js";
+import { protect } from "../../../../../../lib/auth.js";
 import {
   findPortfolioById,
   updatePortfolioBlock,
-} from "../../../../../lib/portfolio-helper.js";
-import { requirePortfolioOwnershipMiddleware } from "../../../../../lib/portfolio-ownership.js";
+} from "../../../../../../lib/portfolio-helper.js";
+import { requirePortfolioOwnershipMiddleware } from "../../../../../../lib/portfolio-ownership.js";
 import {
   createVerificationLog,
   ensureBlockVerification,
-} from "../../../../../lib/verification-helper.js";
-import { autoVerifyBlock, shouldAutoVerify } from "../../../../../lib/verification-auto.js";
+} from "../../../../../../lib/verification-helper.js";
+import { autoVerifyBlock, shouldAutoVerify } from "../../../../../../lib/verification-auto.js";
 
 /**
  * @swagger

@@ -3,7 +3,7 @@ import { protect } from "../../../lib/auth.js";
 import { authorize } from "../../../lib/auth.js";
 import { getPendingVerificationRequests } from "../../../lib/verification-helper.js";
 import Portfolio from "../../../models/Portfolio.js";
-import { connectDB } from "../../../lib/mongodb.js";
+import connectDB from "../../../lib/mongodb.js";
 
 /**
  * @swagger

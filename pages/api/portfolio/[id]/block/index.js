@@ -1,8 +1,8 @@
-import { handleCORS } from "../../../../lib/api-helpers.js";
-import { protect } from "../../../../lib/auth.js";
-import { addBlockToPortfolio } from "../../../../lib/portfolio-helper.js";
-import { requirePortfolioOwnershipMiddleware } from "../../../../lib/portfolio-ownership.js";
-import { validateBlock } from "../../../../lib/validation.js";
+import { handleCORS } from "../../../../../lib/api-helpers.js";
+import { protect } from "../../../../../lib/auth.js";
+import { addBlockToPortfolio } from "../../../../../lib/portfolio-helper.js";
+import { requirePortfolioOwnershipMiddleware } from "../../../../../lib/portfolio-ownership.js";
+import { validateBlock } from "../../../../../lib/validation.js";
 
 /**
  * @swagger

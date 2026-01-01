@@ -1,13 +1,13 @@
-import { connectDB } from '../../../../../../lib/json-db.js';
-import { findOlympiadById } from '../../../../../../lib/olympiad-helper.js';
-import { findQuestionsByOlympiadId } from '../../../../../../lib/question-helper.js';
-import { protect } from '../../../../../../lib/auth.js';
-import connectMongoDB from '../../../../../../lib/mongodb.js';
-import Attempt from '../../../../../../models/Attempt.js';
-import { validateQuestionAccess } from '../../../../../../lib/anti-cheat-validator.js';
-import { validateDeviceFingerprint } from '../../../../../../lib/device-locking.js';
-import { issueQuestionNonce } from '../../../../../../lib/replay-protection.js';
-import { createAuditLog } from '../../../../../../lib/audit-logger.js';
+import { connectDB } from '../../../../../lib/json-db.js';
+import { findOlympiadById } from '../../../../../lib/olympiad-helper.js';
+import { findQuestionsByOlympiadId } from '../../../../../lib/question-helper.js';
+import { protect } from '../../../../../lib/auth.js';
+import connectMongoDB from '../../../../../lib/mongodb.js';
+import Attempt from '../../../../../models/Attempt.js';
+import { validateQuestionAccess } from '../../../../../lib/anti-cheat-validator.js';
+import { validateDeviceFingerprint } from '../../../../../lib/device-locking.js';
+import { issueQuestionNonce } from '../../../../../lib/replay-protection.js';
+import { createAuditLog } from '../../../../../lib/audit-logger.js';
 
 /**
  * Get question for attempt (forward-only navigation)
