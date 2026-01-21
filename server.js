@@ -128,25 +128,10 @@ app.prepare().then(() => {
     }
   });
 
-  // Initialize Socket.io with enhanced CORS
-  // Get allowed origins for Socket.io
-  const getAllowedSocketOrigins = () => {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const origins = [
-      frontendUrl,
-      'http://localhost:5173',
-      'https://global-olimpiad-v2-2.vercel.app',
-    ];
-    if (process.env.ALLOWED_ORIGINS) {
-      const additional = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-      origins.push(...additional);
-    }
-    return origins.filter((v, i, a) => a.indexOf(v) === i);
-  };
-
+  // Initialize Socket.io with CORS - allow all origins
   const io = new Server(httpServer, {
     cors: {
-      origin: getAllowedSocketOrigins(),
+      origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],
