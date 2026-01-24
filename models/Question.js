@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 
 const questionSchema = new mongoose.Schema({
   olympiadId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Olympiad',
+    type: String,
     required: true
   },
   question: {

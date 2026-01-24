@@ -8,14 +8,12 @@ const auditLogSchema = new mongoose.Schema({
     index: true
   },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     index: true
   },
   olympiadId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Olympiad',
+    type: String,
     required: true,
     index: true
   },
@@ -59,6 +57,11 @@ auditLogSchema.index({ eventType: 1, timestamp: -1 });
 
 // Index for querying all logs for an olympiad
 auditLogSchema.index({ olympiadId: 1, timestamp: -1 });
+
+// Force recompilation in dev
+if (process.env.NODE_ENV === 'development') {
+  delete mongoose.models.AuditLog;
+}
 
 const AuditLog = mongoose.models.AuditLog || mongoose.model('AuditLog', auditLogSchema);
 

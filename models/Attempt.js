@@ -2,14 +2,12 @@ import mongoose from 'mongoose';
 
 const attemptSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     index: true
   },
   olympiadId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Olympiad',
+    type: String,
     required: true,
     index: true
   },
@@ -34,12 +32,10 @@ const attemptSchema = new mongoose.Schema({
     min: 0
   },
   answeredQuestions: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Question'
+    type: String
   }],
   skippedQuestions: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Question'
+    type: String
   }],
   deviceFingerprint: {
     type: String,
@@ -151,8 +147,7 @@ const attemptSchema = new mongoose.Schema({
     type: Date
   },
   pausedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: String
   },
   pauseReason: {
     type: String
@@ -165,8 +160,7 @@ const attemptSchema = new mongoose.Schema({
     type: Date
   },
   invalidatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: String
   },
   invalidationReason: {
     type: String
@@ -180,6 +174,11 @@ attemptSchema.index({ userId: 1, olympiadId: 1 }, { unique: true });
 
 // Index for querying active attempts
 attemptSchema.index({ status: 1, endsAt: 1 });
+
+// Force recompilation in dev
+if (process.env.NODE_ENV === 'development') {
+  delete mongoose.models.Attempt;
+}
 
 const Attempt = mongoose.models.Attempt || mongoose.model('Attempt', attemptSchema);
 

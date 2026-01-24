@@ -2,18 +2,15 @@ import mongoose from 'mongoose';
 
 const submissionSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true
   },
   olympiadId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Olympiad',
+    type: String,
     required: true
   },
   questionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Question',
+    type: String,
     required: true
   },
   answer: {
@@ -29,8 +26,7 @@ const submissionSchema = new mongoose.Schema({
     default: false
   },
   gradedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: String
   },
   gradedAt: {
     type: Date
@@ -48,8 +44,7 @@ const submissionSchema = new mongoose.Schema({
     default: 0
   },
   aiCheckedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: String
   },
   aiCheckedAt: {
     type: Date

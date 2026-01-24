@@ -2,13 +2,11 @@ import mongoose from 'mongoose';
 
 const cameraCaptureSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true
   },
   olympiadId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Olympiad',
+    type: String,
     required: true
   },
   imagePath: {

@@ -39,18 +39,52 @@ export default async function handler(req, res) {
     await connectDB();
 
     const { olympiadId } = req.query;
-    if (!olympiadId) {
-      return res.status(400).json({
-        success: false,
-        message: "olympiadId query parameter is required",
-      });
-    }
-
+    
     const userId = authResult.user._id;
     const userRole = authResult.user.role;
     const isAdminOrOwner =
       userRole === "admin" || userRole === "owner" || userRole === "resolter";
+    const isResolter = userRole === "resolter";
+    const isSchoolTeacher = userRole === "school-teacher";
     const isUniversity = userRole === "university";
+
+    // If no olympiadId, handle fetching all results for a user
+    if (!olympiadId) {
+      const targetUserId = req.query.userId || userId;
+      
+      // Check permissions: users can only see their own results unless they have special roles
+      if (targetUserId !== userId && !isAdminOrOwner && !isResolter && !isSchoolTeacher && !isUniversity) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to view these results",
+        });
+      }
+
+      // Import findResultsByUserId dynamically or use the one from imports if available
+      const { findResultsByUserId } = await import("../../../lib/result-helper.js");
+      const userResults = findResultsByUserId(targetUserId);
+      
+      // Enrich results with olympiad info
+      const enrichedResults = userResults.map(result => {
+        const olympiad = findOlympiadById(result.olympiadId);
+        return {
+          ...result,
+          olympiadTitle: olympiad?.title || "Unknown Olympiad",
+          olympiadType: olympiad?.type || "test",
+          olympiad: olympiad ? {
+            _id: olympiad._id,
+            title: olympiad.title,
+            type: olympiad.type,
+            totalPoints: olympiad.totalPoints
+          } : null
+        };
+      });
+
+      return res.json({
+        success: true,
+        results: enrichedResults
+      });
+    }
 
     const olympiad = findOlympiadById(olympiadId);
     if (!olympiad) {

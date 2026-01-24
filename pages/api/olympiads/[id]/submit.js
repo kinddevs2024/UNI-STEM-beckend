@@ -97,6 +97,7 @@ export default async function handler(req, res) {
     if (attempt) {
       // Check if time expired
       if (isTimeExpired(attempt.endsAt)) {
+        console.log(`[Submit] Time expired for attempt ${attempt._id}. EndsAt: ${attempt.endsAt}, Now: ${new Date()}`);
         attempt.status = 'time_expired';
         await attempt.save();
         return res.status(400).json({ 
@@ -109,6 +110,7 @@ export default async function handler(req, res) {
       // Validate attempt is active
       const validation = validateAttemptActive(attempt);
       if (!validation.valid) {
+        console.log(`[Submit] Attempt validation failed for ${attempt._id}: ${validation.error}`);
         return res.status(400).json({ 
           success: false,
           message: validation.error,
@@ -120,6 +122,7 @@ export default async function handler(req, res) {
       try {
         validateTimeNotExpired(attempt.endsAt);
       } catch (error) {
+        console.log(`[Submit] validateTimeNotExpired failed for ${attempt._id}: ${error.message}`);
         attempt.status = 'time_expired';
         await attempt.save();
         return res.status(400).json({ 
@@ -132,6 +135,7 @@ export default async function handler(req, res) {
 
     // Validate request body
     if (!req.body || (typeof req.body !== 'object')) {
+      console.log('[Submit] Invalid request body');
       return res.status(400).json({ 
         success: false,
         message: 'Request body is required and must be JSON' 
@@ -141,6 +145,7 @@ export default async function handler(req, res) {
     // Check if olympiad exists
     const olympiad = findOlympiadById(olympiadId);
     if (!olympiad) {
+      console.log(`[Submit] Olympiad not found: ${olympiadId}`);
       return res.status(404).json({ 
         success: false,
         message: 'Olympiad not found' 
@@ -150,6 +155,7 @@ export default async function handler(req, res) {
     // Check if olympiad is in a valid status for submission
     const validSubmissionStatuses = ['active', 'published'];
     if (!validSubmissionStatuses.includes(olympiad.status)) {
+      console.log(`[Submit] Invalid olympiad status: ${olympiad.status}`);
       return res.status(400).json({ 
         success: false,
         message: `Cannot submit. Olympiad status is: ${olympiad.status}. It must be 'active' or 'published' to submit.` 
@@ -162,6 +168,7 @@ export default async function handler(req, res) {
     const endTime = new Date(olympiad.endTime);
 
     if (now < startTime) {
+      console.log(`[Submit] Olympiad not started. Start: ${startTime}, Now: ${now}`);
       return res.status(400).json({ 
         success: false,
         message: `Cannot submit. Olympiad has not started yet. Start time: ${startTime.toISOString()}` 
@@ -169,6 +176,7 @@ export default async function handler(req, res) {
     }
 
     if (now > endTime) {
+      console.log(`[Submit] Olympiad ended. End: ${endTime}, Now: ${now}`);
       return res.status(400).json({ 
         success: false,
         message: `Cannot submit. Olympiad has ended. End time: ${endTime.toISOString()}` 
@@ -177,6 +185,7 @@ export default async function handler(req, res) {
 
     // Check if attempt exists (anti-cheat validation takes precedence)
     if (attempt && attempt.status === 'completed') {
+      console.log(`[Submit] Attempt already completed: ${attempt._id}`);
       return res.status(400).json({ 
         success: false,
         message: 'You have already completed this attempt',
@@ -186,7 +195,9 @@ export default async function handler(req, res) {
 
     // Check if user has already submitted this olympiad this month (legacy check)
     // Note: With anti-cheat system, this should be checked via attempt instead
+    // Only check if no active attempt exists, or if attempt is not completed
     if (!attempt && hasSubmittedThisMonth(userId, olympiadId)) {
+      console.log(`[Submit] Monthly limit reached for user ${userId}`);
       const existingResult = findResultByUserAndOlympiad(userId, olympiadId);
       const completedDate = existingResult ? new Date(existingResult.completedAt) : new Date();
       const nextMonth = new Date(completedDate);
@@ -205,7 +216,7 @@ export default async function handler(req, res) {
 
     // Check if already submitted (for resubmission logic)
     const existingResult = findResultByUserAndOlympiad(userId, olympiadId);
-    if (existingResult) {
+    if (existingResult && !attempt) { // Only block if not part of an active attempt
       // Allow resubmission if olympiad is still active and within time window
       const allowResubmission = validSubmissionStatuses.includes(olympiad.status) && 
                                 now >= startTime && 
@@ -230,6 +241,7 @@ export default async function handler(req, res) {
         
         // Continue with submission process
       } else {
+        console.log(`[Submit] Already submitted and resubmission not allowed`);
         return res.status(400).json({ 
           success: false,
           message: 'Already submitted',
@@ -251,6 +263,7 @@ export default async function handler(req, res) {
     const allQuestions = findQuestionsByOlympiadId(olympiadId);
     
     if (!allQuestions || allQuestions.length === 0) {
+      console.log(`[Submit] No questions found for olympiad ${olympiadId}`);
       return res.status(400).json({ 
         success: false,
         message: 'No questions found for this olympiad' 
@@ -262,6 +275,7 @@ export default async function handler(req, res) {
     
     if (olympiad.type === 'test') {
       if (!answers || typeof answers !== 'object' || Object.keys(answers).length === 0) {
+        console.log(`[Submit] Answers required for test type`);
         return res.status(400).json({ 
           success: false,
           message: 'Answers are required for test type olympiad. Please provide answers object with questionId: answer pairs.' 
@@ -270,6 +284,7 @@ export default async function handler(req, res) {
     } else if (olympiad.type === 'mixed') {
       // Mixed type - must have answers object with both test and essay questions
       if (!answers || typeof answers !== 'object' || Object.keys(answers).length === 0) {
+        console.log(`[Submit] Answers required for mixed type`);
         return res.status(400).json({ 
           success: false,
           message: 'Answers are required for mixed type olympiad. Please provide answers object with questionId: answer pairs (for test questions) or questionId: essayContent (for essay questions).' 
@@ -282,6 +297,7 @@ export default async function handler(req, res) {
       const missingAnswers = questionIds.filter(qId => !answeredQuestionIds.includes(qId));
       
       if (missingAnswers.length > 0) {
+        console.log(`[Submit] Missing answers for mixed type: ${missingAnswers.join(', ')}`);
         return res.status(400).json({ 
           success: false,
           message: `Missing answers for questions: ${missingAnswers.join(', ')}. Please provide answers for all questions.`,
@@ -321,6 +337,7 @@ export default async function handler(req, res) {
       }
       
       if (!essayContent || essayContent.trim().length === 0) {
+        console.log(`[Submit] Essay content required`);
         return res.status(400).json({ 
           success: false,
           message: 'Essay content is required for essay type olympiad. Please provide the essay content in the "essay", "content", "answer", or "answers" field (as a string).',
@@ -332,6 +349,7 @@ export default async function handler(req, res) {
         });
       }
     } else {
+      console.log(`[Submit] Unknown olympiad type: ${olympiad.type}`);
       return res.status(400).json({ 
         success: false,
         message: `Unknown olympiad type: ${olympiad.type}` 

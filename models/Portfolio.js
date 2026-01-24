@@ -197,8 +197,7 @@ const portfolioSchema = new mongoose.Schema(
       index: true,
     },
     verifiedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       default: null,
     },
     verifiedAt: {

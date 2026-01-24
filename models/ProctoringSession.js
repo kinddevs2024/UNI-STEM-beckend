@@ -9,14 +9,12 @@ const proctoringSessionSchema = new mongoose.Schema({
     index: true
   },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     index: true
   },
   olympiadId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Olympiad',
+    type: String,
     required: true,
     index: true
   },
@@ -75,6 +73,11 @@ const proctoringSessionSchema = new mongoose.Schema({
 
 // Index for querying active sessions
 proctoringSessionSchema.index({ status: 1, createdAt: -1 });
+
+// Force recompilation in dev
+if (process.env.NODE_ENV === 'development') {
+  delete mongoose.models.ProctoringSession;
+}
 
 const ProctoringSession = mongoose.models.ProctoringSession || mongoose.model('ProctoringSession', proctoringSessionSchema);
 

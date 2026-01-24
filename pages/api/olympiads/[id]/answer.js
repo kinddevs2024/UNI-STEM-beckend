@@ -107,13 +107,19 @@ export default async function handler(req, res) {
     // Validate answer submission (checks if questionIndex matches currentQuestionIndex)
     const validation = validateAnswerSubmission(attempt, questionIdx);
     if (!validation.valid) {
-      return res.status(403).json({ 
-        success: false,
-        message: validation.error,
-        code: validation.code,
-        currentQuestionIndex: validation.currentQuestionIndex,
-        questionIndex: validation.questionIndex
-      });
+      // If validation failed because user is resubmitting the current question, allow it
+      // This can happen if frontend sends multiple requests or retries
+      if (validation.code === 'INVALID_QUESTION_INDEX' && validation.questionIndex === attempt.currentQuestionIndex) {
+        // Allow resubmission of current question
+      } else {
+        return res.status(403).json({ 
+          success: false,
+          message: validation.error,
+          code: validation.code,
+          currentQuestionIndex: validation.currentQuestionIndex,
+          questionIndex: validation.questionIndex
+        });
+      }
     }
 
     // Get questions

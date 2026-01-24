@@ -21,8 +21,7 @@ const verificationLogSchema = new mongoose.Schema(
       index: true,
     },
     actorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       default: null, // null for system actions
     },
     actorType: {

@@ -98,7 +98,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { olympiadId, captureType } = fields || {};
+    const { olympiadId, captureType, videoType } = fields || {};
 
     if (!olympiadId) {
       return res.status(400).json({
@@ -161,6 +161,9 @@ export default async function handler(req, res) {
     // Use relative path for database storage
     const videoPath = savedFile.relativePath || savedFile.path;
 
+    // Determine capture type (use videoType if provided, fallback to captureType or "both")
+    const finalCaptureType = videoType?.toString() || captureType?.toString() || "both";
+
     // Store metadata in database
     let capture;
     if (useMongoDB) {
@@ -169,7 +172,7 @@ export default async function handler(req, res) {
         userId: authResult.user._id,
         olympiadId: olympiadId.toString(),
         imagePath: videoPath,
-        captureType: captureType?.toString() || "both", // Screen + Camera combined
+        captureType: finalCaptureType,
       });
     } else {
       // Use JSON DB as fallback
@@ -179,7 +182,7 @@ export default async function handler(req, res) {
         userId: userId,
         olympiadId: olympiadId.toString(),
         imagePath: videoPath,
-        captureType: captureType?.toString() || "both",
+        captureType: finalCaptureType,
         timestamp: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
