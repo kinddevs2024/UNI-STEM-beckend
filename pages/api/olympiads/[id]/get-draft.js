@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     const userId = authResult.user._id;
 
     // Check if olympiad exists
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({ 
         success: false,
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     }
 
     // Get draft
-    const draft = findDraftByUserAndOlympiad(userId, olympiadId);
+    const draft = await findDraftByUserAndOlympiad(userId, olympiadId);
 
     if (!draft) {
       return res.json({

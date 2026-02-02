@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({
         success: false,
@@ -81,11 +81,11 @@ export default async function handler(req, res) {
     const paginatedResults = allResults.slice(skip, skip + limit);
 
     // Get all submissions for this olympiad
-    const allSubmissions = findSubmissionsByOlympiadId(olympiadId);
+    const allSubmissions = await findSubmissionsByOlympiadId(olympiadId);
 
     // Populate results with user info and submissions
     const resultsWithDetails = paginatedResults.map((result, index) => {
-      const user = findUserById(result.userId);
+      const user = await findUserById(result.userId);
       const userSubmissions = allSubmissions.filter(
         (s) => s.userId === result.userId
       );

@@ -16,7 +16,7 @@
   - `lib/auth.js` has `authorize()` function for role checks
   - Portfolio endpoint (`/api/portfolios`) checks roles: `authorize("university", "checker", "admin", "owner")`
   - Protected routes use `protect()` middleware
-  - **File**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/pages/api/portfolios.js:101`
+  - **File**: `UNI-STEM-beckend/pages/api/portfolios.js:101`
 
 #### Pagination Consistency
 - ✅ **Status**: VERIFIED - Backend implements proper pagination
@@ -25,7 +25,7 @@
   - Returns pagination metadata: `{ page, limit, total, pages }` (lines 232-237)
   - Frontend uses backend pagination (UniversityDashboard.jsx:78-98)
   - No client-side slicing found
-  - **File**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/pages/api/portfolios.js`
+  - **File**: `UNI-STEM-beckend/pages/api/portfolios.js`
 
 #### Search Scalability
 - ⚠️ **Status**: PARTIALLY OPTIMIZED
@@ -34,7 +34,7 @@
   - Does query User collection first to get matching student IDs (lines 168-171)
   - Then uses `$in` operator for efficient querying (line 180)
   - **Note**: Could be further optimized with MongoDB text indexes, but current implementation is acceptable
-  - **File**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/pages/api/portfolios.js:160-183`
+  - **File**: `UNI-STEM-beckend/pages/api/portfolios.js:160-183`
 
 #### Backward Compatibility (Legacy Fields)
 - ✅ **Status**: VERIFIED
@@ -42,7 +42,7 @@
   - `isPublic` field kept for backward compatibility (documented in KNOWN_ISSUES.md)
   - Portfolio model handles both `isPublic` and `visibility` fields
   - No breaking changes to existing data structure
-  - **Files**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/models/Portfolio.js`
+  - **Files**: `UNI-STEM-beckend/models/Portfolio.js`
 
 #### Error Handling (No Crashes on Bad Input)
 - ✅ **Status**: VERIFIED
@@ -51,7 +51,7 @@
   - MongoDB connection errors handled (lines 243-256)
   - Generic error messages in production (NODE_ENV check)
   - Input validation in request handlers
-  - **File**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/pages/api/portfolios.js:239-262`
+  - **File**: `UNI-STEM-beckend/pages/api/portfolios.js:239-262`
 
 ---
 
@@ -72,7 +72,7 @@
   - Protected routes use `ProtectedRoute` component
   - Public routes accessible without auth
   - Portfolio routes handle both slug and ID
-  - **File**: `GlobalOlimpiad-v2.2/src/App.jsx`
+  - **File**: `UNI-STEM-Front/src/App.jsx`
 
 #### Correct Loading & Empty States
 - ✅ **Status**: VERIFIED
@@ -97,7 +97,7 @@
   - Design tokens defined in `styles/design-tokens.css`
   - Global styles use tokens
   - **Known Issue**: Container width padding uses hardcoded `2rem` (documented in KNOWN_ISSUES.md)
-  - **File**: `GlobalOlimpiad-v2.2/src/styles/design-tokens.css`
+  - **File**: `UNI-STEM-Front/src/styles/design-tokens.css`
 
 ---
 
@@ -117,7 +117,7 @@
   - Theme stored in portfolio document
   - Theme loaded correctly on portfolio view
   - `normalizeTheme` function handles theme normalization
-  - **File**: `GlobalOlimpiad-v2.2/src/utils/portfolioThemes.js`
+  - **File**: `UNI-STEM-Front/src/utils/portfolioThemes.js`
 
 #### containerWidth Persistence
 - ⚠️ **Status**: VERIFIED WITH WORKAROUND
@@ -125,7 +125,7 @@
   - `normalizeTheme` preserves `containerWidth` (line 229)
   - Manual restoration in PortfolioView/PortfolioConstructor as backup
   - **Known Issue**: Should be fixed in `normalizeTheme` itself (documented in KNOWN_ISSUES.md)
-  - **File**: `GlobalOlimpiad-v2.2/src/utils/portfolioThemes.js:229`
+  - **File**: `UNI-STEM-Front/src/utils/portfolioThemes.js:229`
 
 #### Public vs Private Access
 - ✅ **Status**: VERIFIED
@@ -134,7 +134,7 @@
   - Public portfolios accessible via `/portfolio/:slug` without auth
   - Private portfolios only accessible to owner
   - Portfolio access middleware enforces visibility rules
-  - **File**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/middleware/portfolio-access.js`
+  - **File**: `UNI-STEM-beckend/middleware/portfolio-access.js`
 
 #### University Masked Data Access
 - ✅ **Status**: VERIFIED
@@ -143,7 +143,7 @@
   - Applied only for university role users (line 215)
   - `filterPersonalData()` filters sensitive portfolio blocks
   - Unlock contacts requires explicit action
-  - **File**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/pages/api/portfolios.js:214-223`
+  - **File**: `UNI-STEM-beckend/pages/api/portfolios.js:214-223`
 
 ---
 
@@ -156,7 +156,7 @@
   - Pagination: Backend pagination with page/limit (UniversityDashboard.jsx:78-98)
   - View: Portfolio view opens in new tab (line 166)
   - Reserve: Contact unlock functionality (lines 169-200)
-  - **File**: `GlobalOlimpiad-v2.2/src/pages/UniversityDashboard/UniversityDashboard.jsx`
+  - **File**: `UNI-STEM-Front/src/pages/UniversityDashboard/UniversityDashboard.jsx`
 
 #### Pagination Correctness with Large Datasets
 - ✅ **Status**: VERIFIED
@@ -172,7 +172,7 @@
   - No `.slice()` calls found in UniversityDashboard
   - Frontend uses backend pagination (lines 84-98)
   - Pagination state from backend response
-  - **File**: `GlobalOlimpiad-v2.2/src/pages/UniversityDashboard/UniversityDashboard.jsx`
+  - **File**: `UNI-STEM-Front/src/pages/UniversityDashboard/UniversityDashboard.jsx`
 
 #### Masked Contact Safety
 - ✅ **Status**: VERIFIED
@@ -181,7 +181,7 @@
   - Requires explicit unlock action (unlockContacts API call)
   - Masking applied server-side before response
   - No unmasked contacts in initial portfolio list
-  - **File**: `kinddevs2024-GlobalOlimpiad-v2.2_backend/pages/api/portfolios.js:214-223`
+  - **File**: `UNI-STEM-beckend/pages/api/portfolios.js:214-223`
 
 ---
 

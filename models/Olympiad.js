@@ -42,7 +42,8 @@ const olympiadSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'upcoming', 'active', 'completed'],
+    // Keep backward compatibility with existing status values used across API/front-end
+    enum: ['draft', 'unvisible', 'visible', 'published', 'upcoming', 'active', 'completed'],
     default: 'draft'
   },
   createdBy: {
@@ -63,6 +64,9 @@ const olympiadSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Index for status + startTime (admin listing, active olympiads)
+olympiadSchema.index({ status: 1, startTime: 1 });
 
 // Calculate total points before saving
 olympiadSchema.pre('save', async function(next) {
@@ -88,7 +92,11 @@ olympiadSchema.pre('save', async function(next) {
   next();
 });
 
+// In dev, drop the cached model to allow schema updates (e.g. enum changes)
+if (process.env.NODE_ENV !== 'production' && mongoose.models.Olympiad) {
+  delete mongoose.models.Olympiad;
+}
+
 const Olympiad = mongoose.models.Olympiad || mongoose.model('Olympiad', olympiadSchema);
 
 export default Olympiad;
-

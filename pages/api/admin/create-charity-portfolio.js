@@ -2,7 +2,7 @@ import { handleCORS } from "../../../lib/api-helpers.js";
 import { protect, authorize } from "../../../lib/auth.js";
 import connectDB from "../../../lib/mongodb.js";
 import Portfolio from "../../../models/Portfolio.js";
-import { readDB } from "../../../lib/json-db.js";
+import { getAllUsers } from "../../../lib/user-helper.js";
 import { createPortfolio } from "../../../lib/portfolio-helper.js";
 
 /**
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     await connectDB();
 
     // Find user by email
-    const users = readDB("users");
+    const users = await getAllUsers();
     const user = users.find(
       (u) => u.email.toLowerCase() === "charityhends@gmail.com".toLowerCase()
     );

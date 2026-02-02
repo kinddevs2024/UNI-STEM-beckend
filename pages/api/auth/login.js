@@ -1,7 +1,8 @@
-import { connectDB } from '../../../lib/json-db.js';
+import connectMongoDB from '../../../lib/mongodb.js';
 import { findUserByEmail } from '../../../lib/user-helper.js';
 import { generateToken } from '../../../lib/auth.js';
 import { handleCORS } from '../../../middleware/cors.js';
+import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 
 /**
  * @swagger
@@ -48,15 +49,23 @@ import { handleCORS } from '../../../middleware/cors.js';
  *               $ref: '#/components/schemas/Error'
  */
 export default async function handler(req, res) {
-  // Handle CORS preflight
   if (handleCORS(req, res)) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  const rateLimit = checkRateLimitByIP('/auth/login', req);
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      success: false,
+      message: 'Too many login attempts. Please try again later.',
+      retryAfter: rateLimit.resetAt,
+    });
+  }
+
   try {
-    await connectDB();
+    await connectMongoDB();
 
     const { email } = req.body;
 
@@ -69,7 +78,7 @@ export default async function handler(req, res) {
     }
 
     // Check for user
-    const user = findUserByEmail(email);
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ 
         success: false,
@@ -77,7 +86,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id.toString());
 
     // Check if user has agreed to cookies
     // If cookies is true, don't show/set cookies (cookies already agreed/active)

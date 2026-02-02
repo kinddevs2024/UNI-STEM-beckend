@@ -222,7 +222,7 @@ export default async function handler(req, res) {
           logoUrl = portfolio.studentId.userLogo || null;
         } else {
           // If studentId is a string, try to get user data
-          const studentUser = findUserByIdWithoutPassword(portfolio.studentId);
+          const studentUser = await findUserByIdWithoutPassword(portfolio.studentId);
           if (studentUser) {
             logoUrl = studentUser.userLogo || null;
           }

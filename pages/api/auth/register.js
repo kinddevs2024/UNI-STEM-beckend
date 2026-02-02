@@ -1,8 +1,9 @@
 import dotenv from 'dotenv';
-import { connectDB } from '../../../lib/json-db.js';
+import connectDB from '../../../lib/mongodb.js';
 import { createUser, findUserByEmail } from '../../../lib/user-helper.js';
 import { generateToken } from '../../../lib/auth.js';
 import { handleCORS } from '../../../middleware/cors.js';
+import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -77,11 +78,19 @@ if (!process.env.JWT_SECRET) {
  *               $ref: '#/components/schemas/Error'
  */
 export default async function handler(req, res) {
-  // Handle CORS preflight
   if (handleCORS(req, res)) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  const rateLimit = checkRateLimitByIP('/auth/register', req);
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      success: false,
+      message: 'Too many registration attempts. Please try again later.',
+      retryAfter: rateLimit.resetAt,
+    });
   }
 
   try {
@@ -130,7 +139,7 @@ export default async function handler(req, res) {
 
 
     // Check if user exists
-    const userExists = findUserByEmail(email);
+    const userExists = await findUserByEmail(email);
     if (userExists) {
       return res.status(400).json({ 
         success: false,
@@ -173,7 +182,7 @@ export default async function handler(req, res) {
       userLogo,
     });
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id.toString());
 
     res.status(201).json({
       token,

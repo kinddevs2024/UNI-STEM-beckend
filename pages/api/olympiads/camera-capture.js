@@ -6,17 +6,9 @@ import {
   saveFile,
   config,
   isVideoFile,
-  processVideo,
 } from "../../../lib/upload.js";
-import {
-  readDB,
-  writeDB,
-  generateId,
-  connectDB as connectJSONDB,
-} from "../../../lib/json-db.js";
 import fs from "fs";
 import path from "path";
-import ffmpeg from "fluent-ffmpeg";
 
 export { config };
 
@@ -34,32 +26,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Try to connect to MongoDB, fallback to JSON DB if it fails
-    let useMongoDB = false;
-    try {
-      await connectDB();
-      useMongoDB = true;
-    } catch (mongoError) {
-      const isMongoConnectionError =
-        mongoError.name === "MongooseServerSelectionError" ||
-        mongoError.name === "MongoServerSelectionError" ||
-        mongoError.message?.includes("ECONNREFUSED") ||
-        mongoError.message?.includes("connect ECONNREFUSED") ||
-        mongoError.message?.includes("connection skipped");
-
-      if (isMongoConnectionError) {
-        // Only log warning once per minute to reduce noise
-        const now = Date.now();
-        if (!global.lastMongoWarning || now - global.lastMongoWarning > 60000) {
-          console.warn("⚠️ MongoDB unavailable, using JSON database fallback");
-          global.lastMongoWarning = now;
-        }
-        await connectJSONDB();
-        useMongoDB = false;
-      } else {
-        throw mongoError;
-      }
-    }
+    await connectDB();
 
     const { fields, files } = await parseForm(req);
     const { olympiadId, captureType, sessionId, isSequence } = fields;
@@ -76,8 +43,8 @@ export default async function handler(req, res) {
       const images = Array.isArray(files.images)
         ? files.images
         : files.images
-        ? [files.images]
-        : [];
+          ? [files.images]
+          : [];
 
       if (images.length === 0) {
         return res.status(400).json({
@@ -101,10 +68,10 @@ export default async function handler(req, res) {
       // Get current frame count (to append, not overwrite)
       const existingFrames = fs.existsSync(sessionDir)
         ? fs
-            .readdirSync(sessionDir)
-            .filter(
-              (file) => file.startsWith("frame-") && file.endsWith(".jpg")
-            ).length
+          .readdirSync(sessionDir)
+          .filter(
+            (file) => file.startsWith("frame-") && file.endsWith(".jpg")
+          ).length
         : 0;
 
       // Save all images to session directory with sequential naming
@@ -126,7 +93,7 @@ export default async function handler(req, res) {
         message: `${images.length} images uploaded successfully`,
         sessionId: sessionId.toString(),
         imagesCount: existingFrames + images.length,
-        storage: useMongoDB ? "mongodb" : "json",
+        storage: "mongodb",
       });
       return;
     }
@@ -135,7 +102,7 @@ export default async function handler(req, res) {
     const file = Array.isArray(files.image)
       ? files.image[0]
       : files.image ||
-        (Array.isArray(files.video) ? files.video[0] : files.video);
+      (Array.isArray(files.video) ? files.video[0] : files.video);
 
     if (!file) {
       return res.status(400).json({
@@ -156,31 +123,12 @@ export default async function handler(req, res) {
     // Use relative path for database storage
     const imagePath = savedFile.relativePath || savedFile.path;
 
-    let capture;
-    if (useMongoDB) {
-      // Use MongoDB
-      capture = await CameraCapture.create({
-        userId: authResult.user._id,
-        olympiadId: olympiadId.toString(),
-        imagePath: imagePath,
-        captureType: captureType.toString(),
-      });
-    } else {
-      // Use JSON DB as fallback
-      const captures = readDB("cameraCaptures");
-      capture = {
-        _id: generateId(),
-        userId: authResult.user._id.toString(),
-        olympiadId: olympiadId.toString(),
-        imagePath: imagePath,
-        captureType: captureType.toString(),
-        timestamp: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      captures.push(capture);
-      writeDB("cameraCaptures", captures);
-    }
+    const capture = await CameraCapture.create({
+      userId: authResult.user._id.toString(),
+      olympiadId: olympiadId.toString(),
+      imagePath: imagePath,
+      captureType: captureType.toString(),
+    });
 
     // Generate file URL for accessing the file
     const fileUrl = `/api/uploads/${savedFile.name}`;

@@ -1,5 +1,6 @@
 import { handleCORS } from "../../../lib/api-helpers.js";
 import { protect } from "../../../lib/auth.js";
+import { checkRateLimitByIP } from "../../../lib/rate-limiting.js";
 import { parseForm, saveFile } from "../../../lib/upload.js";
 import fs from "fs";
 
@@ -53,6 +54,15 @@ export default async function handler(req, res) {
     return res.status(405).json({
       success: false,
       message: "Method not allowed",
+    });
+  }
+
+  const rateLimit = checkRateLimitByIP("/upload", req);
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      success: false,
+      message: "Too many uploads. Please try again later.",
+      retryAfter: rateLimit.resetAt,
     });
   }
 

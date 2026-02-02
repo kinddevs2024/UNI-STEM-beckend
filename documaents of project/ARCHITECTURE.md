@@ -1,6 +1,6 @@
 # System Architecture
 
-Technical architecture documentation for the Global Olimpiad Platform.
+Technical architecture documentation for the UNI STEM platform.
 
 ---
 
@@ -483,7 +483,7 @@ io.to(`olympiad-${olympiadId}`).emit('timer-update', {
 ```
 Internet
   │
-  ├─▶ Domain (olympiad.example.com)
+  ├─▶ Domain (unistem.example.com)
   │   │
   │   └─▶ Nginx Reverse Proxy
   │       ├─▶ Frontend (Static Files)

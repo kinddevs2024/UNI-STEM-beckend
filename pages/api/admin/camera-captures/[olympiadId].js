@@ -1,8 +1,7 @@
-import connectDBMongo from '../../../../lib/mongodb.js';
+import connectMongoDB from '../../../../lib/mongodb.js';
 import CameraCapture from '../../../../models/CameraCapture.js';
 import { protect } from '../../../../lib/auth.js';
 import { authorize } from '../../../../lib/auth.js';
-import { readDB, connectDB } from '../../../../lib/json-db.js';
 import { findUserById } from '../../../../lib/user-helper.js';
 
 export default async function handler(req, res) {
@@ -33,7 +32,7 @@ export default async function handler(req, res) {
       });
     }
 
-    await connectDB();
+    await connectMongoDB();
 
     const { olympiadId } = req.query;
 
@@ -48,68 +47,32 @@ export default async function handler(req, res) {
     const limit = Math.min(parseInt(req.query.limit) || 20, 50);
     const skip = (page - 1) * limit;
 
-    // Try MongoDB first, fallback to JSON DB
-    let captures = [];
-    let useMongoDB = false;
-    let total = 0;
+    const filter = { olympiadId };
+    const total = await CameraCapture.countDocuments(filter);
+    const mongoCaptures = await CameraCapture.find(filter)
+      .select('_id userId olympiadId imagePath captureType timestamp createdAt')
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-    try {
-      await connectDBMongo();
-      useMongoDB = true;
-      const filter = { olympiadId };
-      total = await CameraCapture.countDocuments(filter);
-      const mongoCaptures = await CameraCapture.find(filter)
-        .populate('userId', 'name email')
-        .select('_id userId olympiadId imagePath captureType timestamp createdAt')
-        .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean();
-      
-      captures = mongoCaptures.map(capture => ({
+    let captures = await Promise.all(mongoCaptures.map(async (capture) => {
+      const user = await findUserById(capture.userId);
+      return {
         _id: capture._id.toString(),
-        olympiadId: capture.olympiadId.toString(),
-        userId: capture.userId?._id?.toString() || capture.userId?.toString() || '',
+        olympiadId: capture.olympiadId,
+        userId: capture.userId,
         user: {
-          name: capture.userId?.name || 'Unknown',
-          email: capture.userId?.email || 'Unknown',
+          name: user ? user.name : 'Unknown',
+          email: user ? user.email : 'Unknown',
         },
         imagePath: capture.imagePath,
         imageUrl: `/api/uploads/${capture.imagePath}`,
         captureType: capture.captureType,
         timestamp: capture.timestamp,
         createdAt: capture.createdAt,
-      }));
-    } catch (mongoError) {
-      // Fallback to JSON DB
-      const allCaptures = readDB('cameraCaptures');
-      const filteredCaptures = allCaptures.filter(c => c.olympiadId === olympiadId);
-      total = filteredCaptures.length;
-      captures = filteredCaptures
-        .sort((a, b) => {
-          const timeA = new Date(a.timestamp || a.createdAt);
-          const timeB = new Date(b.timestamp || b.createdAt);
-          return timeB - timeA;
-        })
-        .slice(skip, skip + limit)
-        .map(capture => {
-          const user = findUserById(capture.userId);
-          return {
-            _id: capture._id,
-            olympiadId: capture.olympiadId,
-            userId: capture.userId,
-            user: {
-              name: user ? user.name : 'Unknown',
-              email: user ? user.email : 'Unknown',
-            },
-            imagePath: capture.imagePath,
-            imageUrl: `/api/uploads/${capture.imagePath}`,
-            captureType: capture.captureType,
-            timestamp: capture.timestamp || capture.createdAt,
-            createdAt: capture.createdAt,
-          };
-        });
-    }
+      };
+    }));
 
     // If school-teacher, filter by school
     if (authResult.user.role === 'school-teacher') {
@@ -118,19 +81,16 @@ export default async function handler(req, res) {
       const teacherSchoolId = teacher.schoolId;
 
       if (teacherSchoolName || teacherSchoolId) {
-        captures = captures.filter(capture => {
-          const user = findUserById(capture.userId);
-          if (!user) return false;
+        const filtered = [];
+        for (const capture of captures) {
+          const user = await findUserById(capture.userId);
+          if (!user) continue;
 
-          // Match by schoolId if both have it, otherwise match by schoolName
-          if (teacherSchoolId && user.schoolId) {
-            return user.schoolId === teacherSchoolId;
-          }
-          if (teacherSchoolName && user.schoolName) {
-            return user.schoolName.toLowerCase() === teacherSchoolName.toLowerCase();
-          }
-          return false;
-        });
+          const matchSchool = (teacherSchoolId && user.schoolId && user.schoolId === teacherSchoolId) ||
+            (teacherSchoolName && user.schoolName && user.schoolName.toLowerCase() === teacherSchoolName.toLowerCase());
+          if (matchSchool) filtered.push(capture);
+        }
+        captures = filtered;
       }
     }
 
@@ -145,7 +105,7 @@ export default async function handler(req, res) {
         total,
         pages: Math.ceil(total / limit),
       },
-      storage: useMongoDB ? 'mongodb' : 'json',
+      storage: 'mongodb',
     });
   } catch (error) {
     console.error('Get camera captures error:', error);

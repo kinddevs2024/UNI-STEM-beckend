@@ -1,15 +1,10 @@
 import connectDB from "../../../../lib/mongodb.js";
 import CameraCapture from "../../../../models/CameraCapture.js";
 import { protect } from "../../../../lib/auth.js";
-import {
-  readDB,
-  writeDB,
-  generateId,
-  connectDB as connectJSONDB,
-} from "../../../../lib/json-db.js";
 import fs from "fs";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
+import { enqueue } from "../../../../lib/ffmpeg-queue.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,31 +29,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Try to connect to MongoDB, fallback to JSON DB if it fails
-    let useMongoDB = false;
-    try {
-      await connectDB();
-      useMongoDB = true;
-    } catch (mongoError) {
-      const isMongoConnectionError =
-        mongoError.name === "MongooseServerSelectionError" ||
-        mongoError.name === "MongoServerSelectionError" ||
-        mongoError.message?.includes("ECONNREFUSED") ||
-        mongoError.message?.includes("connect ECONNREFUSED") ||
-        mongoError.message?.includes("connection skipped");
-
-      if (isMongoConnectionError) {
-        const now = Date.now();
-        if (!global.lastMongoWarning || now - global.lastMongoWarning > 60000) {
-          console.warn("⚠️ MongoDB unavailable, using JSON database fallback");
-          global.lastMongoWarning = now;
-        }
-        await connectJSONDB();
-        useMongoDB = false;
-      } else {
-        throw mongoError;
-      }
-    }
+    await connectDB();
 
     const { olympiadId, sessionId } = req.body;
 
@@ -116,30 +87,34 @@ export default async function handler(req, res) {
 
     // Convert image sequence to video at 2 fps (2 frames per second = 0.5 seconds per frame)
     // Note: Since we capture every 1 second, 2 fps means video plays 2x faster than real-time
-    await new Promise((resolve, reject) => {
-      ffmpeg()
-        .input(inputPattern)
-        .inputOptions(["-framerate", "2"]) // Input frame rate: 2 fps
-        .videoCodec("libx264")
-        .audioCodec("aac")
-        .videoBitrate("1000k")
-        .format("mp4")
-        .outputOptions([
-          "-preset fast",
-          "-crf 23",
-          "-movflags +faststart",
-          "-vf scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2",
-          "-r 2", // Output frame rate: 2 fps (0.5 seconds per frame)
-        ])
-        .on("end", () => {
-          resolve();
+    // Uses FFmpeg queue to limit concurrent processing
+    await enqueue(
+      () =>
+        new Promise((resolve, reject) => {
+          ffmpeg()
+            .input(inputPattern)
+            .inputOptions(["-framerate", "2"]) // Input frame rate: 2 fps
+            .videoCodec("libx264")
+            .audioCodec("aac")
+            .videoBitrate("1000k")
+            .format("mp4")
+            .outputOptions([
+              "-preset fast",
+              "-crf 23",
+              "-movflags +faststart",
+              "-vf scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2",
+              "-r 2", // Output frame rate: 2 fps (0.5 seconds per frame)
+            ])
+            .on("end", () => {
+              resolve();
+            })
+            .on("error", (err) => {
+              console.error("Video conversion error:", err);
+              reject(err);
+            })
+            .save(outputPath);
         })
-        .on("error", (err) => {
-          console.error("Video conversion error:", err);
-          reject(err);
-        })
-        .save(outputPath);
-    });
+    );
 
     // Get video file stats
     const stats = fs.statSync(outputPath);
@@ -180,7 +155,7 @@ export default async function handler(req, res) {
       message: "Video created successfully",
       captureId: capture._id,
       videoUrl: fileUrl,
-      storage: useMongoDB ? "mongodb" : "json",
+      storage: "mongodb",
       fileType: "video",
       fileSize: stats.size,
       framesCount: files.length,

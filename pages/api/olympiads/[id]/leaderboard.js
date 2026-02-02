@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     const limit = Math.min(parseInt(req.query.limit) || 20, 50);
     const skip = (page - 1) * limit;
     
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
 
     if (!olympiad) {
       return res.status(404).json({ 
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     // Get all results for this olympiad
     // Show results that are: (checked + visible) OR (just visible)
     // checked + visible = publicly viewable by anyone
-    const allResultsRaw = findResultsByOlympiadId(olympiadId);
+    const allResultsRaw = await findResultsByOlympiadId(olympiadId);
     const allResults = allResultsRaw
       .filter(r => {
         // Publicly viewable: checked status + visible
@@ -67,8 +67,8 @@ export default async function handler(req, res) {
     const paginatedResults = allResults.slice(skip, skip + limit);
 
     // Populate user information
-    const leaderboard = paginatedResults.map((result, index) => {
-      const user = findUserById(result.userId);
+    const leaderboard = await Promise.all(paginatedResults.map(async (result, index) => {
+      const user = await findUserById(result.userId);
       
       // Determine position label
       let position = '';
@@ -98,8 +98,8 @@ export default async function handler(req, res) {
       olympiadType: olympiad.type,
       totalParticipants: total,
       leaderboard,
-      topThree: allResults.slice(0, 3).map((result, index) => {
-        const user = findUserById(result.userId);
+      topThree: await Promise.all(allResults.slice(0, 3).map(async (result, index) => {
+        const user = await findUserById(result.userId);
         let position = '';
         if (index === 0) position = '🥇 1st Place';
         else if (index === 1) position = '🥈 2nd Place';
@@ -117,7 +117,7 @@ export default async function handler(req, res) {
           completedAt: result.completedAt,
           timeSpent: result.timeSpent || 0,
         };
-      }),
+      })),
       pagination: {
         page,
         limit,

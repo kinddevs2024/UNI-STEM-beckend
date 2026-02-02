@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const isAdminOrOwner = userRole === 'admin' || userRole === 'owner' || userRole === 'resolter';
     const isUniversity = userRole === 'university';
 
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({ 
         success: false,
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
       const paginatedResults = allResults.slice(skip, skip + limit);
 
       const allResultsWithUsers = paginatedResults.map((result, index) => {
-        const user = findUserById(result.userId);
+        const user = await findUserById(result.userId);
         let position = '';
         if (index === 0) position = '🥇 1st Place';
         else if (index === 1) position = '🥈 2nd Place';
@@ -140,7 +140,7 @@ export default async function handler(req, res) {
       (r.status === 'checked' && r.visible === true) || r.visible !== false
     );
     const topFive = publiclyViewableResults.slice(0, 5).map((result, index) => {
-      const user = findUserById(result.userId);
+      const user = await findUserById(result.userId);
       
       // Determine position label
       let position = '';

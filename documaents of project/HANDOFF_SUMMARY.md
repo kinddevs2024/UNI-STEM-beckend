@@ -1,6 +1,6 @@
 # Production Handoff Summary
 
-**Project**: Global Olimpiad Platform v2.2  
+**Project**: UNI STEM v2.2  
 **Status**: ✅ **PRODUCTION READY**  
 **Date**: December 2024
 

@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const { totalScore, percentage, maxScore } = req.body;
 
     // Find result
-    const result = findResultById(resultId);
+    const result = await findResultById(resultId);
     if (!result) {
       return res.status(404).json({ 
         success: false,
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     }
 
     // Verify olympiad exists
-    const olympiad = findOlympiadById(result.olympiadId);
+    const olympiad = await findOlympiadById(result.olympiadId);
     if (!olympiad) {
       return res.status(404).json({ 
         success: false,
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
     }
 
     // Update result
-    const updatedResult = updateResult(resultId, updates);
+    const updatedResult = await updateResult(resultId, updates);
 
     return res.json({
       success: true,

@@ -92,7 +92,7 @@ export default async function handler(req, res) {
     }
 
     // Verify olympiad exists
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({
         success: false,

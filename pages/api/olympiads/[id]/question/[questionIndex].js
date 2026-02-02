@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     }
 
     // Get olympiad
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({ 
         success: false,
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
     }
 
     // Get questions
-    const allQuestions = findQuestionsByOlympiadId(olympiadId);
+    const allQuestions = await findQuestionsByOlympiadId(olympiadId);
     if (!allQuestions || allQuestions.length === 0) {
       return res.status(400).json({ 
         success: false,

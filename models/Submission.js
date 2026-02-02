@@ -56,6 +56,12 @@ const submissionSchema = new mongoose.Schema({
 // Index for faster queries
 submissionSchema.index({ userId: 1, olympiadId: 1, questionId: 1 });
 
+// Index for olympiad + user + recency (leaderboard, results)
+submissionSchema.index({ olympiadId: 1, userId: 1, createdAt: -1 });
+
+// Index for olympiad + question (grading, analytics)
+submissionSchema.index({ olympiadId: 1, questionId: 1 });
+
 const Submission = mongoose.models.Submission || mongoose.model('Submission', submissionSchema);
 
 export default Submission;

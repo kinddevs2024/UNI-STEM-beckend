@@ -73,8 +73,8 @@ export default async function handler(req, res) {
     });
 
     // Get all olympiads and submissions for context
-    const allOlympiads = getAllOlympiads();
-    const allSubmissions = getAllSubmissions();
+    const allOlympiads = await getAllOlympiads();
+    const allSubmissions = await getAllSubmissions();
 
     // Group results by olympiad and populate with details
     const resultsByOlympiad = {};
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
         };
       }
 
-      const user = findUserById(result.userId);
+      const user = await findUserById(result.userId);
       const userSubmissions = allSubmissions.filter(s => 
         s.userId === result.userId && s.olympiadId === result.olympiadId
       );

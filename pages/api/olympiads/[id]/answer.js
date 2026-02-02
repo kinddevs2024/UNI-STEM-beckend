@@ -123,7 +123,7 @@ export default async function handler(req, res) {
     }
 
     // Get questions
-    const allQuestions = findQuestionsByOlympiadId(olympiadId);
+    const allQuestions = await findQuestionsByOlympiadId(olympiadId);
     if (!allQuestions || allQuestions.length === 0) {
       return res.status(400).json({ 
         success: false,

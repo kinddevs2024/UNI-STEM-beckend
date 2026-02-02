@@ -1,6 +1,6 @@
-# Global Olimpiad Platform v2.2
+# UNI STEM v2.2
 
-A comprehensive online olympiad platform with advanced proctoring features, portfolio management, and university dashboard.
+A comprehensive online platform for academic olympiads (UNI STEM) with advanced proctoring features, portfolio management, and university dashboard.
 
 ---
 
@@ -29,13 +29,13 @@ This platform is **production-ready** with complete documentation for deployment
 ## 📁 Project Structure
 
 ```
-Global Olimpiad/
-├── GlobalOlimpiad-v2.2/              # Frontend (React + Vite)
+UNI STEM/
+├── UNI-STEM-Front/                   # Frontend (React + Vite)
 │   ├── src/                          # Source code
 │   ├── docs/                         # Frontend documentation
 │   └── README.md                     # Frontend README
 │
-├── kinddevs2024-GlobalOlimpiad-v2.2_backend/  # Backend (Next.js API Routes)
+├── UNI-STEM-beckend/                 # Backend (Next.js API Routes)
 │   ├── pages/api/                    # API endpoints
 │   ├── models/                       # MongoDB models
 │   ├── lib/                          # Utilities and helpers
@@ -94,7 +94,7 @@ Global Olimpiad/
 
 **Backend**:
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 npm install
 # Create .env file (see ENVIRONMENT_VARIABLES.md)
 npm run dev
@@ -102,7 +102,7 @@ npm run dev
 
 **Frontend**:
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 npm install
 # Create .env file (optional, see ENVIRONMENT_VARIABLES.md)
 npm run dev
@@ -166,14 +166,14 @@ See **[ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)** for complete docu
 - [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) - Environment variables
 
 ### Technical Documentation
-- [GlobalOlimpiad-v2.2/docs/API_ENDPOINTS.md](./GlobalOlimpiad-v2.2/docs/API_ENDPOINTS.md) - API documentation
-- [GlobalOlimpiad-v2.2/README.md](./GlobalOlimpiad-v2.2/README.md) - Frontend README
-- [kinddevs2024-GlobalOlimpiad-v2.2_backend/README.md](./kinddevs2024-GlobalOlimpiad-v2.2_backend/README.md) - Backend README
+- [UNI-STEM-Front/docs/API_ENDPOINTS.md](./UNI-STEM-Front/docs/API_ENDPOINTS.md) - API documentation
+- [UNI-STEM-Front/README.md](./UNI-STEM-Front/README.md) - Frontend README
+- [UNI-STEM-beckend/README.md](./UNI-STEM-beckend/README.md) - Backend README
 
 ### Setup Guides
-- [GlobalOlimpiad-v2.2/docs/BACKEND_GOOGLE_SETUP.md](./GlobalOlimpiad-v2.2/docs/BACKEND_GOOGLE_SETUP.md) - Google OAuth setup
-- [GlobalOlimpiad-v2.2/docs/CONNECTION_GUIDE.md](./GlobalOlimpiad-v2.2/docs/CONNECTION_GUIDE.md) - Connection guide
-- [kinddevs2024-GlobalOlimpiad-v2.2_backend/MONGODB_SETUP_WINDOWS.md](./kinddevs2024-GlobalOlimpiad-v2.2_backend/MONGODB_SETUP_WINDOWS.md) - MongoDB setup
+- [UNI-STEM-Front/docs/BACKEND_GOOGLE_SETUP.md](./UNI-STEM-Front/docs/BACKEND_GOOGLE_SETUP.md) - Google OAuth setup
+- [UNI-STEM-Front/docs/CONNECTION_GUIDE.md](./UNI-STEM-Front/docs/CONNECTION_GUIDE.md) - Connection guide
+- [UNI-STEM-beckend/MONGODB_SETUP_WINDOWS.md](./UNI-STEM-beckend/MONGODB_SETUP_WINDOWS.md) - MongoDB setup
 
 ---
 
@@ -233,7 +233,7 @@ See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed performanc
 - CORS errors
 - File upload failures
 
-See [GlobalOlimpiad-v2.2/docs/TROUBLESHOOTING.md](./GlobalOlimpiad-v2.2/docs/TROUBLESHOOTING.md) for detailed troubleshooting.
+See [UNI-STEM-Front/docs/TROUBLESHOOTING.md](./UNI-STEM-Front/docs/TROUBLESHOOTING.md) for detailed troubleshooting.
 
 ---
 

@@ -1,5 +1,5 @@
 Files Changed
-1. GlobalOlimpiad-v2.2/src/styles/globals.css
+1. UNI-STEM-Front/src/styles/globals.css
 Replaced scrollbar width: 8px → var(--spacing-sm)
 Replaced scrollbar border-radius: 4px → var(--radius-sm)
 Replaced link transition: all 0.3s ease → var(--transition-slow)
@@ -9,7 +9,7 @@ Replaced button transition: all 0.3s ease → var(--transition-slow)
 Replaced loading spinner dimensions 40px → var(--spacing-2xl)
 Replaced loading spinner margin: 20px auto → var(--spacing-lg) auto
 Replaced loading spinner border-radius: 50% → var(--radius-full)
-2. GlobalOlimpiad-v2.2/src/pages/Dashboard/Dashboard.css
+2. UNI-STEM-Front/src/pages/Dashboard/Dashboard.css
 Replaced all hardcoded padding/margin values with spacing tokens (--spacing-xs, --spacing-sm, --spacing-md, --spacing-base, --spacing-lg, --spacing-xl, --spacing-2xl, --spacing-3xl)
 Replaced all hardcoded font-size values with typography tokens (--font-size-xs through --font-size-5xl)
 Replaced all hardcoded font-weight values with weight tokens (--font-weight-medium, --font-weight-semibold, --font-weight-bold)
@@ -33,7 +33,7 @@ Overview
 Replace all hardcoded px values for spacing, typography, and layout in globals.css and Dashboard.css with CSS variables from design-tokens.css. Ensure consistent spacing, typography, border radius, and hover effects across the platform.
 
 Files to Modify
-1. GlobalOlimpiad-v2.2/src/styles/globals.css
+1. UNI-STEM-Front/src/styles/globals.css
 Changes:
 
 Replace hardcoded scrollbar dimensions (8px, 4px) with design tokens
@@ -51,7 +51,7 @@ Button font-size: 14px → --font-size-sm
 Button transition: all 0.3s ease → --transition-slow
 Loading spinner width/height: 40px → use spacing token
 Loading spinner margin: 20px auto → use spacing token
-2. GlobalOlimpiad-v2.2/src/pages/Dashboard/Dashboard.css
+2. UNI-STEM-Front/src/pages/Dashboard/Dashboard.css
 Changes:
 
 Replace all hardcoded padding/margin values with spacing tokens

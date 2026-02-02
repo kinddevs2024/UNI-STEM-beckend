@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     }
 
     // Check if olympiad exists
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({ 
         success: false,
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
     }
 
     // Save draft
-    const draft = saveDraft({
+    const draft = await saveDraft({
       userId,
       olympiadId,
       answers,

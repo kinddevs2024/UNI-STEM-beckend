@@ -100,7 +100,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      const olympiad = findOlympiadById(id);
+      const olympiad = await findOlympiadById(id);
 
       if (!olympiad) {
         return res.status(404).json({ 

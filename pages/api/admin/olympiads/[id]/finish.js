@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     await connectDB();
 
     const { id: olympiadId } = req.query;
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
 
     if (!olympiad) {
       return res.status(404).json({ 

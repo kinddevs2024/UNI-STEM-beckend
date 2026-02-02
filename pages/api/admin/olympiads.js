@@ -1,11 +1,5 @@
 import { connectDB } from '../../../lib/json-db.js';
-import {
-  createOlympiad,
-  getAllOlympiadsWithCreators,
-  findOlympiadById,
-  updateOlympiad,
-  deleteOlympiad,
-} from '../../../lib/olympiad-helper.js';
+import * as olympiadHelperModule from '../../../lib/olympiad-helper.js';
 import { protect } from '../../../lib/auth.js';
 import { authorize } from '../../../lib/auth.js';
 
@@ -106,6 +100,14 @@ export default async function handler(req, res) {
 
     await connectDB();
 
+    const olympiadHelper = olympiadHelperModule.getAllOlympiadsWithCreators
+      ? olympiadHelperModule
+      : olympiadHelperModule.default;
+
+    if (!olympiadHelper?.getAllOlympiadsWithCreators || !olympiadHelper?.createOlympiad) {
+      throw new Error('Olympiad helper exports are not available');
+    }
+
     if (req.method === 'POST') {
       const { title, description, type, subject, startTime, endTime, duration } = req.body;
 
@@ -116,7 +118,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const olympiad = createOlympiad({
+      const olympiad = await olympiadHelper.createOlympiad({
         title,
         description,
         type,
@@ -146,7 +148,12 @@ export default async function handler(req, res) {
       const limit = Math.min(parseInt(req.query.limit) || 20, 50);
       const skip = (page - 1) * limit;
 
-      const allOlympiads = [...getAllOlympiadsWithCreators()]
+      const rawOlympiads = await olympiadHelper.getAllOlympiadsWithCreators();
+      const olympiadList = Array.isArray(rawOlympiads)
+        ? rawOlympiads
+        : (Array.isArray(rawOlympiads?.data) ? rawOlympiads.data : []);
+
+      const allOlympiads = [...olympiadList]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .map(olympiad => ({
           _id: olympiad._id,

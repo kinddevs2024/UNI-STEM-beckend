@@ -1,4 +1,5 @@
-import { connectDB, readDB, writeDB } from '../../../../lib/json-db.js';
+import Result from '../../../../models/Result.js';
+import Submission from '../../../../models/Submission.js';
 import { findOlympiadById } from '../../../../lib/olympiad-helper.js';
 import { getAllQuestions, findQuestionsByOlympiadId } from '../../../../lib/question-helper.js';
 import { createSubmission, findSubmissionsByUserAndOlympiad, findSubmissionsByOlympiadId } from '../../../../lib/submission-helper.js';
@@ -6,7 +7,7 @@ import { createResult, findResultByUserAndOlympiad, hasSubmittedThisMonth } from
 import { deleteDraft } from '../../../../lib/draft-helper.js';
 import { protect } from '../../../../lib/auth.js';
 import { scoreEssay } from '../../../../lib/text-analysis.js';
-import connectMongoDB from '../../../../lib/mongodb.js';
+import connectDB from '../../../../lib/mongodb.js';
 import Attempt from '../../../../models/Attempt.js';
 import ProctoringSession from '../../../../models/ProctoringSession.js';
 import { validateAttemptActive } from '../../../../lib/anti-cheat-validator.js';
@@ -82,7 +83,6 @@ export default async function handler(req, res) {
     }
 
     await connectDB();
-    await connectMongoDB();
 
     const { answers, essay, content, answer } = req.body || {};
     const { id: olympiadId } = req.query;
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
     }
 
     // Check if olympiad exists
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       console.log(`[Submit] Olympiad not found: ${olympiadId}`);
       return res.status(404).json({ 
@@ -196,9 +196,9 @@ export default async function handler(req, res) {
     // Check if user has already submitted this olympiad this month (legacy check)
     // Note: With anti-cheat system, this should be checked via attempt instead
     // Only check if no active attempt exists, or if attempt is not completed
-    if (!attempt && hasSubmittedThisMonth(userId, olympiadId)) {
+    if (!attempt && (await hasSubmittedThisMonth(userId.toString(), olympiadId))) {
       console.log(`[Submit] Monthly limit reached for user ${userId}`);
-      const existingResult = findResultByUserAndOlympiad(userId, olympiadId);
+      const existingResult = await findResultByUserAndOlympiad(userId, olympiadId);
       const completedDate = existingResult ? new Date(existingResult.completedAt) : new Date();
       const nextMonth = new Date(completedDate);
       nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -215,7 +215,7 @@ export default async function handler(req, res) {
     }
 
     // Check if already submitted (for resubmission logic)
-    const existingResult = findResultByUserAndOlympiad(userId, olympiadId);
+    const existingResult = await findResultByUserAndOlympiad(userId.toString(), olympiadId);
     if (existingResult && !attempt) { // Only block if not part of an active attempt
       // Allow resubmission if olympiad is still active and within time window
       const allowResubmission = validSubmissionStatuses.includes(olympiad.status) && 
@@ -223,22 +223,8 @@ export default async function handler(req, res) {
                                 now <= endTime;
       
       if (allowResubmission) {
-        // Delete existing result and submissions to allow resubmission
-        // Remove existing result
-        const results = readDB('results');
-        const resultIndex = results.findIndex(r => r._id === existingResult._id);
-        if (resultIndex !== -1) {
-          results.splice(resultIndex, 1);
-          writeDB('results', results);
-        }
-        
-        // Remove existing submissions
-        const submissions = readDB('submissions');
-        const filteredSubmissions = submissions.filter(
-          s => !(s.userId === userId && s.olympiadId === olympiadId)
-        );
-        writeDB('submissions', filteredSubmissions);
-        
+        await Result.findByIdAndDelete(existingResult._id);
+        await Submission.deleteMany({ userId: userId.toString(), olympiadId });
         // Continue with submission process
       } else {
         console.log(`[Submit] Already submitted and resubmission not allowed`);
@@ -260,7 +246,7 @@ export default async function handler(req, res) {
     }
 
     // Get all questions for this olympiad
-    const allQuestions = findQuestionsByOlympiadId(olympiadId);
+    const allQuestions = await findQuestionsByOlympiadId(olympiadId);
     
     if (!allQuestions || allQuestions.length === 0) {
       console.log(`[Submit] No questions found for olympiad ${olympiadId}`);
@@ -378,8 +364,8 @@ export default async function handler(req, res) {
 
         totalScore += score;
 
-        const submission = createSubmission({
-          userId,
+        const submission = await createSubmission({
+          userId: userId.toString(),
           olympiadId,
           questionId,
           answer,
@@ -399,8 +385,8 @@ export default async function handler(req, res) {
     } else if (olympiad.type === 'mixed' && answers) {
       // Mixed type - process both test and essay questions
       // Get other submissions for essay originality comparison
-      const otherSubmissions = findSubmissionsByOlympiadId(olympiadId)
-        .filter(s => s.userId !== userId);
+      const otherSubs = await findSubmissionsByOlympiadId(olympiadId);
+      const otherSubmissions = otherSubs.filter((s) => s.userId !== userId.toString());
       
       for (const [questionId, answerValue] of Object.entries(answers)) {
         const question = allQuestions.find((q) => q._id === questionId);
@@ -441,8 +427,8 @@ export default async function handler(req, res) {
 
         totalScore += score;
 
-        const submission = createSubmission({
-          userId,
+        const submission = await createSubmission({
+          userId: userId.toString(),
           olympiadId,
           questionId,
           answer: submissionAnswer,
@@ -464,8 +450,8 @@ export default async function handler(req, res) {
       const question = allQuestions[0]; // Essay olympiads typically have one question
       if (question) {
         // Get other submissions for this olympiad to compare originality
-        const otherSubmissions = findSubmissionsByOlympiadId(olympiadId)
-          .filter(s => s.userId !== userId); // Exclude current user's submissions
+        const otherSubs = await findSubmissionsByOlympiadId(olympiadId);
+        const otherSubmissions = otherSubs.filter((s) => s.userId !== userId.toString());
         
         // Score the essay using text analysis
         const essayScoring = scoreEssay(
@@ -474,8 +460,8 @@ export default async function handler(req, res) {
           otherSubmissions
         );
 
-        const submission = createSubmission({
-          userId,
+        const submission = await createSubmission({
+          userId: userId.toString(),
           olympiadId,
           questionId: question._id,
           answer: essayContent.trim(),
@@ -500,8 +486,8 @@ export default async function handler(req, res) {
       : 0;
 
     // Create result
-    const result = createResult({
-      userId,
+    const result = await createResult({
+      userId: userId.toString(),
       olympiadId,
       totalScore,
       maxScore: olympiad.totalPoints,
@@ -511,7 +497,7 @@ export default async function handler(req, res) {
 
     // Delete draft after successful submission
     try {
-      deleteDraft(userId, olympiadId);
+      await deleteDraft(userId.toString(), olympiadId);
     } catch (error) {
       console.warn('Failed to delete draft after submission:', error);
       // Don't fail the submission if draft deletion fails

@@ -14,7 +14,7 @@ This document provides complete production deployment guidance, safety checks, r
 
 #### Environment Variables
 
-**Backend** (`kinddevs2024-GlobalOlimpiad-v2.2_backend/.env`):
+**Backend** (`UNI-STEM-beckend/.env`):
 ```env
 # REQUIRED - Must be set
 MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/olympiad-platform?retryWrites=true&w=majority
@@ -32,7 +32,7 @@ MAX_FILE_SIZE=104857600
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
-**Frontend** (`GlobalOlimpiad-v2.2/.env`):
+**Frontend** (`UNI-STEM-Front/.env`):
 ```env
 # REQUIRED - Must match your production URLs
 VITE_API_URL=https://api.yourdomain.com/api
@@ -86,7 +86,7 @@ VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 
 **First Deploy**:
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 
 # Install dependencies
 npm install --production
@@ -112,7 +112,7 @@ pm2 startup  # Follow instructions to enable auto-start on boot
 
 **Redeploy** (Updates):
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 
 # Pull latest code (if using git)
 git pull origin main
@@ -139,7 +139,7 @@ curl http://localhost:3000/api/health
 
 **First Deploy**:
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Install dependencies
 npm install
@@ -160,7 +160,7 @@ ls -la dist/  # Should contain index.html and assets/
 
 **Redeploy** (Updates):
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Pull latest code (if using git)
 git pull origin main
@@ -195,7 +195,7 @@ server {
     ssl_certificate_key /path/to/private.key;
 
     # Frontend
-    root /path/to/GlobalOlimpiad-v2.2/dist;
+    root /path/to/UNI-STEM-Front/dist;
     index index.html;
 
     location / {
@@ -428,7 +428,7 @@ nginx -s reload
 
 **Method 1: Deploy Previous Build** (Recommended):
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Option A: Git checkout previous version
 git checkout <previous-commit-hash>
@@ -463,7 +463,7 @@ nginx -s reload
 pm2 stop olympiad-backend
 
 # Option A: Git checkout previous version
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 git checkout <previous-commit-hash>
 npm install --production
 pm2 start server.js --name "olympiad-backend" --env production
@@ -475,7 +475,7 @@ pm2 start server.js --name "olympiad-backend" --env production
 
 **Method 2: Quick Code Rollback**:
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 git checkout <previous-commit-hash>
 pm2 restart olympiad-backend
 ```

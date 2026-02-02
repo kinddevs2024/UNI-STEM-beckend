@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     }
 
     // Verify olympiad exists
-    const olympiad = findOlympiadById(submission.olympiadId);
+    const olympiad = await findOlympiadById(submission.olympiadId);
     if (!olympiad) {
       return res.status(404).json({ 
         success: false,
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
     }
 
     // Update submission with new score, grader info, and AI detection
-    const updatedSubmission = updateSubmission(submissionId, {
+    const updatedSubmission = await updateSubmission(submissionId, {
       score: score,
       isCorrect: score > 0,
       gradedBy: authResult.user._id,
@@ -105,14 +105,14 @@ export default async function handler(req, res) {
     });
 
     // Recalculate total result score for this user
-    const userSubmissions = findSubmissionsByUserAndOlympiad(submission.userId, submission.olympiadId);
+    const userSubmissions = await findSubmissionsByUserAndOlympiad(submission.userId, submission.olympiadId);
     const totalScore = userSubmissions.reduce((sum, sub) => {
       // Use updated score for current submission, existing score for others
       return sum + (sub._id === submissionId ? score : sub.score);
     }, 0);
 
     // Update result
-    const result = findResultByUserAndOlympiad(submission.userId, submission.olympiadId);
+    const result = await findResultByUserAndOlympiad(submission.userId, submission.olympiadId);
     let resultStatus = 'active';
     
     if (result) {
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
         resultStatus = 'blocked';
       }
       
-      updateResult(result._id, {
+      await updateResult(result._id, {
         totalScore: totalScore,
         percentage: Math.round(percentage * 100) / 100,
         status: resultStatus,

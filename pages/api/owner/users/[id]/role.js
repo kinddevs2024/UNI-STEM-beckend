@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     }
 
     // Check if user exists
-    const user = findUserById(id);
+    const user = await findUserById(id);
     if (!user) {
       return res.status(404).json({ 
         success: false,

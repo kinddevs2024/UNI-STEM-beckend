@@ -1,14 +1,18 @@
 {
-  "name": "olympiad-platform-backend",
+  "name": "unistem-backend",
   "version": "1.0.0",
-  "description": "Backend API for Olympiad Platform built with Next.js",
+  "description": "Backend API for UNI STEM platform built with Next.js",
   "type": "module",
   "scripts": {
     "dev": "node server.js",
     "build": "next build",
     "start": "node server.js",
     "lint": "next lint",
-    "check-mongodb": "node scripts/check-mongodb.js"
+    "check-mongodb": "node scripts/check-mongodb.js",
+    "ensure-indexes": "node scripts/ensure-indexes.js",
+    "cleanup-uploads": "node scripts/cleanup-uploads.js",
+    "smoke-test": "node scripts/smoke-test.js",
+    "load-test": "node scripts/load-test.js"
   },
   "keywords": [
     "olympiad",

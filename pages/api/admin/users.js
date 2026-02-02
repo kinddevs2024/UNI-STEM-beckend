@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const limit = Math.min(parseInt(req.query.limit) || 20, 50);
     const skip = (page - 1) * limit;
 
-    const allUsers = getAllUsers()
+    const allUsers = [...await getAllUsers()]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .map(user => ({
         _id: user._id,

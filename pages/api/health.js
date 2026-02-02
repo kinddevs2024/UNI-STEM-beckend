@@ -1,32 +1,12 @@
 import connectDB from '../../lib/mongodb.js';
 import mongoose from 'mongoose';
+import { getDiskSpaceInfo } from '../../lib/disk-space.js';
 
 /**
- * @swagger
- * /health:
- *   get:
- *     summary: Health check endpoint
- *     tags: [Health]
- *     responses:
- *       200:
- *         description: Server is running
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: ok
- *                 message:
- *                   type: string
- *                   example: Server is running
- *                 timestamp:
- *                   type: string
- *                   format: date-time
+ * Health check endpoint - for monitoring and load balancers
+ * GET /api/health
  */
 export default async function handler(req, res) {
-  // Handle OPTIONS for CORS preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -36,23 +16,42 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  try {
-    const dbConnected = mongoose.connection.readyState === 1;
-    
-    if (!dbConnected) {
-      await connectDB().catch(() => {});
-    }
+  const checks = {
+    server: 'ok',
+    db: 'unknown',
+    disk: 'unknown',
+  };
 
-    res.json({
-      status: 'ok',
-      message: 'Server is running',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    res.json({
-      status: 'ok',
-      message: 'Server is running',
-      timestamp: new Date().toISOString(),
-    });
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB().catch((e) => {
+        checks.db = 'error';
+        throw e;
+      });
+    }
+    checks.db = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  } catch {
+    checks.db = 'error';
   }
+
+  try {
+    const diskInfo = getDiskSpaceInfo('./uploads');
+    if (diskInfo) {
+      checks.disk = diskInfo.freePercent >= 10 ? 'ok' : 'low';
+      checks.diskFreePercent = Math.round(diskInfo.freePercent * 10) / 10;
+      checks.diskFreeGb = (diskInfo.freeBytes / (1024 ** 3)).toFixed(2);
+    } else {
+      checks.disk = 'ok';
+    }
+  } catch {
+    checks.disk = 'error';
+  }
+
+  const ok = checks.db === 'connected';
+  res.status(ok ? 200 : 503).json({
+    status: ok ? 'ok' : 'degraded',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    checks,
+  });
 }

@@ -45,7 +45,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const questionDoc = createQuestion({
+      const questionDoc = await createQuestion({
         olympiadId,
         question,
         type,
@@ -73,9 +73,9 @@ export default async function handler(req, res) {
 
       let questions;
       if (olympiadId) {
-        questions = findQuestionsByOlympiadId(olympiadId);
+        questions = await findQuestionsByOlympiadId(olympiadId);
       } else {
-        questions = getAllQuestions();
+        questions = await getAllQuestions();
       }
 
       // Sort by order, then by createdAt
@@ -86,8 +86,8 @@ export default async function handler(req, res) {
         return new Date(a.createdAt) - new Date(b.createdAt);
       });
 
-      return res.json(questions.map(q => {
-        const olympiad = findOlympiadById(q.olympiadId);
+      const result = await Promise.all(questions.map(async q => {
+        const olympiad = await findOlympiadById(q.olympiadId);
         return {
           _id: q._id,
           olympiadId: q.olympiadId,
@@ -101,6 +101,8 @@ export default async function handler(req, res) {
           createdAt: q.createdAt,
         };
       }));
+
+      return res.json(result);
     }
   } catch (error) {
     console.error('Admin questions error:', error);

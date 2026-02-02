@@ -28,6 +28,9 @@ const sessionHeartbeatSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Compound index for upsert by attemptId + socketId (heartbeat findOneAndUpdate)
+sessionHeartbeatSchema.index({ attemptId: 1, socketId: 1 }, { unique: true });
+
 // Compound index for querying heartbeats by attempt and status
 sessionHeartbeatSchema.index({ attemptId: 1, status: 1, lastSeenAt: -1 });
 

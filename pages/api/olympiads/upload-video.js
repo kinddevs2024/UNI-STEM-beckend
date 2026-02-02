@@ -1,18 +1,13 @@
 import connectDB from "../../../lib/mongodb.js";
 import CameraCapture from "../../../models/CameraCapture.js";
 import { protect } from "../../../lib/auth.js";
+import { checkRateLimitByIP } from "../../../lib/rate-limiting.js";
 import {
   parseForm,
   saveFile,
   config,
   isVideoFile,
 } from "../../../lib/upload.js";
-import {
-  readDB,
-  writeDB,
-  generateId,
-  connectDB as connectJSONDB,
-} from "../../../lib/json-db.js";
 
 export { config };
 
@@ -48,6 +43,15 @@ export default async function handler(req, res) {
     });
   }
 
+  const rateLimit = checkRateLimitByIP("/upload", req);
+  if (!rateLimit.allowed) {
+    return res.status(429).json({
+      success: false,
+      message: "Too many uploads. Please try again later.",
+      retryAfter: rateLimit.resetAt,
+    });
+  }
+
   try {
     // Verify JWT authentication
     const authResult = await protect(req);
@@ -58,31 +62,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Try to connect to MongoDB, fallback to JSON DB if it fails
-    let useMongoDB = false;
-    try {
-      await connectDB();
-      useMongoDB = true;
-    } catch (mongoError) {
-      const isMongoConnectionError =
-        mongoError.name === "MongooseServerSelectionError" ||
-        mongoError.name === "MongoServerSelectionError" ||
-        mongoError.message?.includes("ECONNREFUSED") ||
-        mongoError.message?.includes("connect ECONNREFUSED") ||
-        mongoError.message?.includes("connection skipped");
-
-      if (isMongoConnectionError) {
-        const now = Date.now();
-        if (!global.lastMongoWarning || now - global.lastMongoWarning > 60000) {
-          console.warn("⚠️ MongoDB unavailable, using JSON database fallback");
-          global.lastMongoWarning = now;
-        }
-        await connectJSONDB();
-        useMongoDB = false;
-      } else {
-        throw mongoError;
-      }
-    }
+    await connectDB();
 
     // Parse form data
     let fields, files;
@@ -165,31 +145,12 @@ export default async function handler(req, res) {
     const finalCaptureType = videoType?.toString() || captureType?.toString() || "both";
 
     // Store metadata in database
-    let capture;
-    if (useMongoDB) {
-      // Use MongoDB
-      capture = await CameraCapture.create({
-        userId: authResult.user._id,
-        olympiadId: olympiadId.toString(),
-        imagePath: videoPath,
-        captureType: finalCaptureType,
-      });
-    } else {
-      // Use JSON DB as fallback
-      const captures = readDB("cameraCaptures");
-      capture = {
-        _id: generateId(),
-        userId: userId,
-        olympiadId: olympiadId.toString(),
-        imagePath: videoPath,
-        captureType: finalCaptureType,
-        timestamp: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      captures.push(capture);
-      writeDB("cameraCaptures", captures);
-    }
+    const capture = await CameraCapture.create({
+      userId: authResult.user._id.toString(),
+      olympiadId: olympiadId.toString(),
+      imagePath: videoPath,
+      captureType: finalCaptureType,
+    });
 
     // Generate file URL for accessing the file
     const fileUrl = `/api/uploads/${savedFile.name}`;
@@ -202,7 +163,7 @@ export default async function handler(req, res) {
       filename: savedFile.name,
       size: savedFile.size,
       fileUrl: fileUrl,
-      storage: useMongoDB ? "mongodb" : "json",
+      storage: "mongodb",
       processed: savedFile.processed || false,
     });
   } catch (error) {

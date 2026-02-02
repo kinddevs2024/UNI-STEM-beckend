@@ -272,6 +272,7 @@ portfolioSchema.index({ studentId: 1, status: 1 });
 portfolioSchema.index({ "layout.blocks.id": 1 }); // For block queries
 portfolioSchema.index({ verificationStatus: 1, portfolioRating: -1 }); // For ratings/verification queries
 portfolioSchema.index({ portfolioRating: -1 }); // For global ratings
+portfolioSchema.index({ createdAt: -1 }); // For admin queries, listing by recency
 
 const Portfolio =
   mongoose.models.Portfolio || mongoose.model("Portfolio", portfolioSchema);

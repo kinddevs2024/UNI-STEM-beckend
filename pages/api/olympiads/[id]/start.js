@@ -1,7 +1,6 @@
-import { connectDB } from '../../../../lib/json-db.js';
+import connectMongoDB from '../../../../lib/mongodb.js';
 import { findOlympiadById } from '../../../../lib/olympiad-helper.js';
 import { protect } from '../../../../lib/auth.js';
-import connectMongoDB from '../../../../lib/mongodb.js';
 import Attempt from '../../../../models/Attempt.js';
 import ProctoringSession from '../../../../models/ProctoringSession.js';
 import { validateCanStart } from '../../../../lib/anti-cheat-validator.js';
@@ -32,15 +31,14 @@ export default async function handler(req, res) {
       });
     }
 
-    await connectDB(); // JSON DB for olympiad data
-    await connectMongoDB(); // MongoDB for attempts
+    await connectMongoDB();
 
     const { id: olympiadId } = req.query;
     const userId = authResult.user._id;
     const { proctoringStatus, deviceFingerprint } = req.body;
 
     // Validate olympiad exists
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({ 
         success: false,

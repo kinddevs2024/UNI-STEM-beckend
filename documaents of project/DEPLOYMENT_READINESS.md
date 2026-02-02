@@ -11,13 +11,13 @@
 ### Build Verification
 
 **Frontend (Vite)**
-- ✅ Build command: `npm run build` (in `GlobalOlimpiad-v2.2/`)
+- ✅ Build command: `npm run build` (in `UNI-STEM-Front/`)
 - ✅ Output: `dist/` directory
 - ✅ Production build succeeds
 - ✅ No dev-only flags in production build
 
 **Backend (Next.js)**
-- ✅ Build command: `npm run build` (in `kinddevs2024-GlobalOlimpiad-v2.2_backend/`)
+- ✅ Build command: `npm run build` (in `UNI-STEM-beckend/`)
 - ✅ Start command: `npm start` (runs `server.js`)
 - ✅ Production mode: `NODE_ENV=production` required
 - ✅ Next.js build succeeds
@@ -110,7 +110,7 @@
 ### Backend Deployment
 
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 
 # Install dependencies
 npm install
@@ -129,7 +129,7 @@ npm start
 
 **One-Command Build**:
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend && npm install && npm run build && npm start
+cd UNI-STEM-beckend && npm install && npm run build && npm start
 ```
 
 **Environment File Example** (`.env`):
@@ -148,7 +148,7 @@ JWT_EXPIRE=7d
 ### Frontend Deployment
 
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Install dependencies
 npm install
@@ -167,7 +167,7 @@ npm run build
 
 **One-Command Build**:
 ```bash
-cd GlobalOlimpiad-v2.2 && npm install && npm run build
+cd UNI-STEM-Front && npm install && npm run build
 ```
 
 **Environment File Example** (`.env.production`):
@@ -345,7 +345,7 @@ VITE_GOOGLE_CLIENT_ID=780692716304-p2k6rmk2gtlrhrrf1ltncl986b1hqgrf.apps.googleu
 
 - **Full Deployment Guide**: See `DEPLOYMENT_GUIDE.md`
 - **Environment Variables**: See `ENVIRONMENT_VARIABLES.md`
-- **API Documentation**: See `GlobalOlimpiad-v2.2/docs/API_ENDPOINTS.md`
+- **API Documentation**: See `UNI-STEM-Front/docs/API_ENDPOINTS.md`
 - **Architecture**: See `ARCHITECTURE.md`
 - **Developer Guide**: See `DEVELOPER_GUIDE.md`
 

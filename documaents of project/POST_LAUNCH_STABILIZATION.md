@@ -476,14 +476,14 @@ pm2 logs olympiad-backend | grep -i "timeout\|query.*slow"
 ```bash
 # Check browser console (user report)
 # Check if dist/ directory exists and has files
-ls -la GlobalOlimpiad-v2.2/dist/
+ls -la UNI-STEM-Front/dist/
 
 # Test frontend load
 curl -I https://yourdomain.com
 ```
 
 **Safest Mitigation**:
-1. **Rebuild frontend**: `cd GlobalOlimpiad-v2.2 && npm run build`
+1. **Rebuild frontend**: `cd UNI-STEM-Front && npm run build`
 2. **Redeploy**: Copy new `dist/` to web server
 3. **Verify**: Check browser console for errors
 

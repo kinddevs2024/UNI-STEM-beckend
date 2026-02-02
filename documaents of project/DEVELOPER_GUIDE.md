@@ -1,6 +1,6 @@
 # Developer Guide
 
-Welcome to the Global Olimpiad Platform! This guide will help you get started as a new developer on the project.
+Welcome to UNI STEM! This guide will help you get started as a new developer on the project.
 
 ---
 
@@ -20,19 +20,19 @@ Welcome to the Global Olimpiad Platform! This guide will help you get started as
 
 2. **Install Backend Dependencies**:
    ```bash
-   cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+   cd UNI-STEM-beckend
    npm install
    ```
 
 3. **Install Frontend Dependencies**:
    ```bash
-   cd GlobalOlimpiad-v2.2
+   cd UNI-STEM-Front
    npm install
    ```
 
 4. **Configure Environment Variables**:
-   - Backend: Create `.env` file in `kinddevs2024-GlobalOlimpiad-v2.2_backend/`
-   - Frontend: Create `.env` file in `GlobalOlimpiad-v2.2/` (optional)
+   - Backend: Create `.env` file in `UNI-STEM-beckend/`
+   - Frontend: Create `.env` file in `UNI-STEM-Front/` (optional)
    - See [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) for details
 
 5. **Start MongoDB** (if using local MongoDB):
@@ -40,20 +40,20 @@ Welcome to the Global Olimpiad Platform! This guide will help you get started as
    # Windows
    net start MongoDB
    # or use the provided script
-   cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+   cd UNI-STEM-beckend
    .\start-mongodb.bat
    ```
 
 6. **Start Backend**:
    ```bash
-   cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+   cd UNI-STEM-beckend
    npm run dev
    ```
    Backend runs on `http://localhost:3000`
 
 7. **Start Frontend**:
    ```bash
-   cd GlobalOlimpiad-v2.2
+   cd UNI-STEM-Front
    npm run dev
    ```
    Frontend runs on `http://localhost:5173`
@@ -65,7 +65,7 @@ Welcome to the Global Olimpiad Platform! This guide will help you get started as
 
 ## 📁 Project Structure
 
-### Frontend (`GlobalOlimpiad-v2.2/`)
+### Frontend (`UNI-STEM-Front/`)
 
 ```
 src/
@@ -101,7 +101,7 @@ src/
     └── animations.css     # Animation definitions
 ```
 
-### Backend (`kinddevs2024-GlobalOlimpiad-v2.2_backend/`)
+### Backend (`UNI-STEM-beckend/`)
 
 ```
 ├── pages/api/          # API routes (Next.js API Routes)
@@ -429,7 +429,7 @@ db.portfolios.find()
 ### Documentation
 
 - [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) - Production status
-- [API_ENDPOINTS.md](./GlobalOlimpiad-v2.2/docs/API_ENDPOINTS.md) - API documentation
+- [API_ENDPOINTS.md](./UNI-STEM-Front/docs/API_ENDPOINTS.md) - API documentation
 - [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) - Environment variables
 - [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) - Known issues and technical debt
 

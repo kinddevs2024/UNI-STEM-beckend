@@ -1,6 +1,6 @@
 # Production Handoff Document
 
-**Project**: Global Olimpiad Platform v2.2  
+**Project**: UNI STEM v2.2  
 **Handoff Date**: December 2024  
 **Status**: Ready for Production Deployment
 
@@ -68,7 +68,7 @@
 
 1. **Configure Backend**:
    ```bash
-   cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+   cd UNI-STEM-beckend
    # Create .env file (see ENVIRONMENT_VARIABLES.md)
    npm install
    npm start
@@ -76,7 +76,7 @@
 
 2. **Build & Deploy Frontend**:
    ```bash
-   cd GlobalOlimpiad-v2.2
+   cd UNI-STEM-Front
    # Create .env file (see ENVIRONMENT_VARIABLES.md)
    npm install
    npm run build
@@ -211,10 +211,10 @@ See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed performanc
 
 ### Documentation Resources
 
-- [TROUBLESHOOTING.md](./GlobalOlimpiad-v2.2/docs/TROUBLESHOOTING.md) - Detailed troubleshooting
-- [API_ENDPOINTS.md](./GlobalOlimpiad-v2.2/docs/API_ENDPOINTS.md) - API documentation
-- Backend README: `kinddevs2024-GlobalOlimpiad-v2.2_backend/README.md`
-- Frontend README: `GlobalOlimpiad-v2.2/README.md`
+- [TROUBLESHOOTING.md](./UNI-STEM-Front/docs/TROUBLESHOOTING.md) - Detailed troubleshooting
+- [API_ENDPOINTS.md](./UNI-STEM-Front/docs/API_ENDPOINTS.md) - API documentation
+- Backend README: `UNI-STEM-beckend/README.md`
+- Frontend README: `UNI-STEM-Front/README.md`
 
 ---
 

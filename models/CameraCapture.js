@@ -15,7 +15,7 @@ const cameraCaptureSchema = new mongoose.Schema({
   },
   captureType: {
     type: String,
-    enum: ['camera', 'screen'],
+    enum: ['camera', 'screen', 'camera_exit', 'screen_exit', 'screenshot', 'both'],
     required: true
   },
   timestamp: {

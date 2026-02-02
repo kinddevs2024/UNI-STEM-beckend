@@ -62,11 +62,11 @@ export default async function handler(req, res) {
 
       // Import findResultsByUserId dynamically or use the one from imports if available
       const { findResultsByUserId } = await import("../../../lib/result-helper.js");
-      const userResults = findResultsByUserId(targetUserId);
+      const userResults = await findResultsByUserId(targetUserId);
       
       // Enrich results with olympiad info
-      const enrichedResults = userResults.map(result => {
-        const olympiad = findOlympiadById(result.olympiadId);
+      const enrichedResults = await Promise.all(userResults.map(async (result) => {
+        const olympiad = await findOlympiadById(result.olympiadId);
         return {
           ...result,
           olympiadTitle: olympiad?.title || "Unknown Olympiad",
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
             totalPoints: olympiad.totalPoints
           } : null
         };
-      });
+      }));
 
       return res.json({
         success: true,
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
     if (!olympiad) {
       return res.status(404).json({
         success: false,
@@ -114,7 +114,7 @@ export default async function handler(req, res) {
 
     // Handle university users
     if (isUniversity) {
-      const allResults = findResultsByOlympiadId(olympiadId).sort((a, b) => {
+      const allResults = (await findResultsByOlympiadId(olympiadId)).sort((a, b) => {
         if (b.totalScore !== a.totalScore) {
           return b.totalScore - a.totalScore;
         }
@@ -123,8 +123,8 @@ export default async function handler(req, res) {
 
       // If university owns the olympiad, return full data
       if (isOlympiadOwner) {
-        const allResultsWithUsers = allResults.map((result, index) => {
-          const user = findUserById(result.userId);
+        const allResultsWithUsers = await Promise.all(allResults.map(async (result, index) => {
+          const user = await findUserById(result.userId);
           let position = "";
           if (index === 0) position = "🥇 1st Place";
           else if (index === 1) position = "🥈 2nd Place";
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
             status: result.status || "active",
             _id: result._id,
           };
-        });
+        }));
 
         return res.json({
           success: true,
@@ -197,15 +197,15 @@ export default async function handler(req, res) {
 
     // If admin/owner, return all results
     if (isAdminOrOwner) {
-      const allResults = findResultsByOlympiadId(olympiadId).sort((a, b) => {
+      const allResults = (await findResultsByOlympiadId(olympiadId)).sort((a, b) => {
         if (b.totalScore !== a.totalScore) {
           return b.totalScore - a.totalScore;
         }
         return new Date(a.completedAt) - new Date(b.completedAt);
       });
 
-      const allResultsWithUsers = allResults.map((result, index) => {
-        const user = findUserById(result.userId);
+      const allResultsWithUsers = await Promise.all(allResults.map(async (result, index) => {
+        const user = await findUserById(result.userId);
         let position = "";
         if (index === 0) position = "🥇 1st Place";
         else if (index === 1) position = "🥈 2nd Place";
@@ -227,7 +227,7 @@ export default async function handler(req, res) {
           status: result.status || "active", // Default to 'active' if not set
           _id: result._id,
         };
-      });
+      }));
 
       return res.json({
         success: true,
@@ -242,7 +242,7 @@ export default async function handler(req, res) {
     }
 
     // For students, return only their own result
-    const userResult = findResultByUserAndOlympiad(userId, olympiadId);
+    const userResult = await findResultByUserAndOlympiad(userId, olympiadId);
     if (!userResult) {
       // Return 200 with a message instead of 404, so the frontend can handle it gracefully
       return res.status(200).json({
@@ -256,7 +256,7 @@ export default async function handler(req, res) {
     }
 
     // Get all results to calculate rank
-    const allResultsRaw = findResultsByOlympiadId(olympiadId);
+    const allResultsRaw = await findResultsByOlympiadId(olympiadId);
     // For students: show checked+visible results (publicly viewable), visible results, and their own result even if not visible
     // For admin/resolter/owner: show all results (they already returned early, this is just for safety)
     const allResults = allResultsRaw
@@ -285,8 +285,8 @@ export default async function handler(req, res) {
       const isVisible = r.visible !== false; // true if visible is true or undefined
       return (r.status === "checked" && isVisible) || isVisible;
     });
-    const topFive = visibleResults.slice(0, 5).map((result, index) => {
-      const user = findUserById(result.userId);
+    const topFive = await Promise.all(visibleResults.slice(0, 5).map(async (result, index) => {
+      const user = await findUserById(result.userId);
 
       // Determine position label
       let position = "";
@@ -306,16 +306,16 @@ export default async function handler(req, res) {
         percentage: Math.round(result.percentage * 100) / 100,
         completedAt: result.completedAt,
       };
-    });
+    }));
 
     // Get user's submissions
-    const userSubmissions = findSubmissionsByUserAndOlympiad(
+    const userSubmissions = await findSubmissionsByUserAndOlympiad(
       userId,
       olympiadId
     );
 
     // Get questions
-    const questions = findQuestionsByOlympiadId(olympiadId);
+    const questions = await findQuestionsByOlympiadId(olympiadId);
 
     // Build answers object
     const answers = {};
@@ -345,7 +345,7 @@ export default async function handler(req, res) {
       userSubmissions.length > 0
     ) {
       // Get other submissions for comparison
-      const otherSubmissions = findSubmissionsByOlympiadId(olympiadId).filter(
+      const otherSubmissions = (await findSubmissionsByOlympiadId(olympiadId)).filter(
         (s) => s.userId !== userId
       );
 

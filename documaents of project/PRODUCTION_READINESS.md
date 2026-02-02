@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive overview of the Global Olimpiad platform production readiness status, including verified functionality, known issues, deployment requirements, and operational procedures.
+This document provides a comprehensive overview of the UNI STEM platform production readiness status, including verified functionality, known issues, deployment requirements, and operational procedures.
 
 ---
 
@@ -142,8 +142,8 @@ See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for detailed information on the followi
 All dependencies are production-ready and actively maintained. No security vulnerabilities identified at time of documentation.
 
 See `package.json` files in:
-- `GlobalOlimpiad-v2.2/package.json` (Frontend)
-- `kinddevs2024-GlobalOlimpiad-v2.2_backend/package.json` (Backend)
+- `UNI-STEM-Front/package.json` (Frontend)
+- `UNI-STEM-beckend/package.json` (Backend)
 
 ---
 
@@ -181,7 +181,7 @@ See `package.json` files in:
 8. **PortfolioView** - Portfolio view tracking
 9. **VerificationLog** - Portfolio verification history
 
-See individual model files in `kinddevs2024-GlobalOlimpiad-v2.2_backend/models/` for schema details.
+See individual model files in `UNI-STEM-beckend/models/` for schema details.
 
 ---
 
@@ -224,7 +224,7 @@ See [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md) for complete verificati
 
 **Backend:**
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 npm install
 # Configure .env file
 npm start
@@ -232,7 +232,7 @@ npm start
 
 **Frontend:**
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 npm install
 # Configure .env file (if needed)
 npm run build
@@ -261,9 +261,9 @@ npm run build
 - [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md) - Pre-launch verification checklist
 - [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) - Detailed known issues and technical debt
 - [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) - Complete environment variable reference
-- [API_ENDPOINTS.md](./GlobalOlimpiad-v2.2/docs/API_ENDPOINTS.md) - API documentation
-- [README.md](./GlobalOlimpiad-v2.2/README.md) - Frontend README
-- [README.md](./kinddevs2024-GlobalOlimpiad-v2.2_backend/README.md) - Backend README
+- [API_ENDPOINTS.md](./UNI-STEM-Front/docs/API_ENDPOINTS.md) - API documentation
+- [README.md](./UNI-STEM-Front/README.md) - Frontend README
+- [README.md](./UNI-STEM-beckend/README.md) - Backend README
 
 ---
 
@@ -309,7 +309,7 @@ npm run build
    - Check disk space
    - Verify MAX_FILE_SIZE is appropriate
 
-See [TROUBLESHOOTING.md](./GlobalOlimpiad-v2.2/docs/TROUBLESHOOTING.md) for more details.
+See [TROUBLESHOOTING.md](./UNI-STEM-Front/docs/TROUBLESHOOTING.md) for more details.
 
 ---
 

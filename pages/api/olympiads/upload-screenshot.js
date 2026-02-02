@@ -6,12 +6,6 @@ import {
   saveFile,
   config,
 } from "../../../lib/upload.js";
-import {
-  readDB,
-  writeDB,
-  generateId,
-  connectDB as connectJSONDB,
-} from "../../../lib/json-db.js";
 
 export { config };
 
@@ -56,31 +50,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Try to connect to MongoDB, fallback to JSON DB if it fails
-    let useMongoDB = false;
-    try {
-      await connectDB();
-      useMongoDB = true;
-    } catch (mongoError) {
-      const isMongoConnectionError =
-        mongoError.name === "MongooseServerSelectionError" ||
-        mongoError.name === "MongoServerSelectionError" ||
-        mongoError.message?.includes("ECONNREFUSED") ||
-        mongoError.message?.includes("connect ECONNREFUSED") ||
-        mongoError.message?.includes("connection skipped");
-
-      if (isMongoConnectionError) {
-        const now = Date.now();
-        if (!global.lastMongoWarning || now - global.lastMongoWarning > 60000) {
-          console.warn("⚠️ MongoDB unavailable, using JSON database fallback");
-          global.lastMongoWarning = now;
-        }
-        await connectJSONDB();
-        useMongoDB = false;
-      } else {
-        throw mongoError;
-      }
-    }
+    await connectDB();
 
     // Parse form data
     let fields, files;
@@ -158,33 +128,12 @@ export default async function handler(req, res) {
     // Use relative path for database storage
     const screenshotPath = savedFile.relativePath || savedFile.path;
 
-    // Store metadata in database
-    let capture;
-    if (useMongoDB) {
-      // Use MongoDB
-      capture = await CameraCapture.create({
-        userId: authResult.user._id,
-        olympiadId: olympiadId?.toString() || null,
-        imagePath: screenshotPath,
-        captureType: "screenshot", // Mark as screenshot
-      });
-    } else {
-      // Use JSON DB as fallback
-      const captures = readDB("cameraCaptures");
-      capture = {
-        _id: generateId(),
-        userId: userId,
-        olympiadId: olympiadId?.toString() || null,
-        imagePath: screenshotPath,
-        captureType: "screenshot",
-        username: userIdentifier, // Store username if provided
-        timestamp: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      captures.push(capture);
-      writeDB("cameraCaptures", captures);
-    }
+    const capture = await CameraCapture.create({
+      userId: authResult.user._id.toString(),
+      olympiadId: olympiadId?.toString() || '',
+      imagePath: screenshotPath,
+      captureType: "screenshot",
+    });
 
     // Generate file URL for accessing the file
     const fileUrl = `/api/uploads/${savedFile.name}`;
@@ -198,7 +147,7 @@ export default async function handler(req, res) {
       size: savedFile.size,
       fileUrl: fileUrl,
       username: userIdentifier,
-      storage: useMongoDB ? "mongodb" : "json",
+      storage: "mongodb",
     });
   } catch (error) {
     console.error("Screenshot upload error:", error);

@@ -1,6 +1,8 @@
-import { connectDB, readDB } from '../../../lib/json-db.js';
+import connectMongoDB from '../../../lib/mongodb.js';
 import { getAllUsers } from '../../../lib/user-helper.js';
 import { getAllOlympiads } from '../../../lib/olympiad-helper.js';
+import { getAllSubmissions } from '../../../lib/submission-helper.js';
+import { getAllResults } from '../../../lib/result-helper.js';
 import { protect } from '../../../lib/auth.js';
 import { authorize } from '../../../lib/auth.js';
 
@@ -26,12 +28,12 @@ export default async function handler(req, res) {
       });
     }
 
-    await connectDB();
+    await connectMongoDB();
 
-    const users = getAllUsers();
-    const olympiads = getAllOlympiads();
-    const submissions = readDB('submissions');
-    const results = readDB('results');
+    const users = await getAllUsers();
+    const olympiads = await getAllOlympiads();
+    const submissions = await getAllSubmissions();
+    const results = await getAllResults();
 
     const totalUsers = users.length;
     const totalStudents = users.filter(u => u.role === 'student').length;

@@ -31,7 +31,7 @@ node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(32).toString(
 
 ```bash
 # Navigate to backend directory
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 
 # Create .env file (if not exists)
 cat > .env << 'EOF'
@@ -75,7 +75,7 @@ pm2 logs olympiad-backend --lines 20
 #### Redeploy (Updates)
 
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 
 # Stop current process
 pm2 stop olympiad-backend
@@ -96,7 +96,7 @@ pm2 logs olympiad-backend --lines 20
 
 ```bash
 # Navigate to frontend directory
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Create .env file (if not exists)
 cat > .env << 'EOF'
@@ -133,7 +133,7 @@ test -f dist/index.html && echo "✅ Build successful" || echo "❌ Build failed
 #### Redeploy (Updates)
 
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Rebuild
 npm install
@@ -152,23 +152,23 @@ test -f dist/index.html && echo "✅ Build successful" || echo "❌ Build failed
 
 ```bash
 # Backend automatically loads .env from:
-# 1. Current working directory: kinddevs2024-GlobalOlimpiad-v2.2_backend/.env
+# 1. Current working directory: UNI-STEM-beckend/.env
 # 2. Same directory as server.js
 # 3. Parent directory
 
 # Verify .env is loaded
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 node -e "require('dotenv').config(); console.log(process.env.JWT_SECRET ? '✅ .env loaded' : '❌ .env not loaded')"
 ```
 
 #### Frontend (.env file location)
 
 ```bash
-# Frontend .env must be in: GlobalOlimpiad-v2.2/.env
+# Frontend .env must be in: UNI-STEM-Front/.env
 # Vite reads .env at build time (not runtime)
 
 # Verify .env variables are in build
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 npm run build
 grep -r "VITE_API_URL" dist/ || echo "Variables are embedded in build"
 ```
@@ -203,13 +203,13 @@ pm2 monit
 # Create systemd service file: /etc/systemd/system/olympiad-backend.service
 sudo tee /etc/systemd/system/olympiad-backend.service > /dev/null << 'EOF'
 [Unit]
-Description=Olympiad Platform Backend
+Description=UNI STEM Backend
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/path/to/kinddevs2024-GlobalOlimpiad-v2.2_backend
+WorkingDirectory=/path/to/UNI-STEM-beckend
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node server.js
 Restart=always
@@ -265,7 +265,7 @@ node -e "require('dotenv').config(); const mongoose = require('mongoose'); mongo
 #### Step 2: Backend Deploy
 
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 
 # Verify .env exists and has required variables
 test -f .env || { echo "❌ .env file missing"; exit 1; }
@@ -320,7 +320,7 @@ curl -s http://localhost:3000/api/health | grep -q "ok" || { echo "❌ Backend h
 #### Step 4: Frontend Deploy
 
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Verify .env exists
 test -f .env || { echo "❌ Frontend .env missing"; exit 1; }
@@ -492,7 +492,7 @@ fi
 pm2 stop olympiad-backend
 
 # Step 2: Restore previous code version
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 
 # Option A: Git checkout previous commit
 git log --oneline -10  # Find previous commit hash
@@ -525,7 +525,7 @@ pm2 logs olympiad-backend --lines 20
 
 ```bash
 # Step 1: Navigate to frontend directory
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 
 # Step 2: Restore previous code version
 # Option A: Git checkout previous commit

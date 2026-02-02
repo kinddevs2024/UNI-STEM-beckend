@@ -65,6 +65,11 @@ const userSchema = new mongoose.Schema({
   userLogo: {
     type: String,
     trim: true
+  },
+  coins: {
+    type: Number,
+    default: 100,
+    min: 0
   }
 }, {
   timestamps: true

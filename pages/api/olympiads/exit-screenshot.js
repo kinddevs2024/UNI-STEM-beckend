@@ -6,12 +6,6 @@ import {
   saveFile,
   config,
 } from "../../../lib/upload.js";
-import {
-  readDB,
-  writeDB,
-  generateId,
-  connectDB as connectJSONDB,
-} from "../../../lib/json-db.js";
 
 export { config };
 
@@ -56,31 +50,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Try to connect to MongoDB, fallback to JSON DB if it fails
-    let useMongoDB = false;
-    try {
-      await connectDB();
-      useMongoDB = true;
-    } catch (mongoError) {
-      const isMongoConnectionError =
-        mongoError.name === "MongooseServerSelectionError" ||
-        mongoError.name === "MongoServerSelectionError" ||
-        mongoError.message?.includes("ECONNREFUSED") ||
-        mongoError.message?.includes("connect ECONNREFUSED") ||
-        mongoError.message?.includes("connection skipped");
-
-      if (isMongoConnectionError) {
-        const now = Date.now();
-        if (!global.lastMongoWarning || now - global.lastMongoWarning > 60000) {
-          console.warn("⚠️ MongoDB unavailable, using JSON database fallback");
-          global.lastMongoWarning = now;
-        }
-        await connectJSONDB();
-        useMongoDB = false;
-      } else {
-        throw mongoError;
-      }
-    }
+    await connectDB();
 
     // Parse form data
     let fields, files;
@@ -143,48 +113,21 @@ export default async function handler(req, res) {
     }
 
     // Store metadata in database
-    if (useMongoDB) {
-      // Use MongoDB
-      for (const saved of savedFiles) {
-        await CameraCapture.create({
-          userId: authResult.user._id,
-          olympiadId: olympiadId?.toString() || null,
-          imagePath: saved.file.relativePath || saved.file.path,
-          captureType: saved.type === 'camera' ? 'camera_exit' : 'screen_exit',
-          timestamp: timestamp ? new Date(timestamp) : new Date(),
-          metadata: {
-            exitType: exitType || 'unknown',
-            trigger: 'exit_detection'
-          }
-        });
-      }
-    } else {
-      // Use JSON DB as fallback
-      const captures = readDB("cameraCaptures");
-      for (const saved of savedFiles) {
-        const capture = {
-          _id: generateId(),
-          userId: userId,
-          olympiadId: olympiadId?.toString() || null,
-          imagePath: saved.file.relativePath || saved.file.path,
-          captureType: saved.type === 'camera' ? 'camera_exit' : 'screen_exit',
-          username: userIdentifier,
-          timestamp: timestamp || new Date().toISOString(),
-          exitType: exitType || 'unknown',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        captures.push(capture);
-      }
-      writeDB("cameraCaptures", captures);
+    for (const saved of savedFiles) {
+      await CameraCapture.create({
+        userId: authResult.user._id.toString(),
+        olympiadId: olympiadId?.toString() || '',
+        imagePath: saved.file.relativePath || saved.file.path,
+        captureType: saved.type === 'camera' ? 'camera_exit' : 'screen_exit',
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
+      });
     }
 
-    // Return success response
     res.json({
       success: true,
       message: "Exit screenshots uploaded successfully",
       count: savedFiles.length,
-      storage: useMongoDB ? "mongodb" : "json",
+      storage: "mongodb",
     });
   } catch (error) {
     console.error("Exit screenshot upload error:", error);

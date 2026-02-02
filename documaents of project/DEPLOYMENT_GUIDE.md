@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Global Olimpiad platform to production.
+This guide provides step-by-step instructions for deploying the UNI STEM platform to production.
 
 ---
 
@@ -23,7 +23,7 @@ This guide provides step-by-step instructions for deploying the Global Olimpiad 
 ### Domain & SSL
 
 - Domain name for frontend (e.g., `olympiad.example.com`)
-- Domain name for backend API (e.g., `api.olympiad.example.com`)
+- Domain name for backend API (e.g., `api.unistem.example.com`)
 - SSL certificates for HTTPS (Let's Encrypt recommended)
 
 ---
@@ -64,7 +64,7 @@ This guide provides step-by-step instructions for deploying the Global Olimpiad 
    ```
 4. Ensure MongoDB is accessible from backend application
 
-**Windows MongoDB Setup**: See `kinddevs2024-GlobalOlimpiad-v2.2_backend/MONGODB_SETUP_WINDOWS.md`
+**Windows MongoDB Setup**: See `UNI-STEM-beckend/MONGODB_SETUP_WINDOWS.md`
 
 ---
 
@@ -72,7 +72,7 @@ This guide provides step-by-step instructions for deploying the Global Olimpiad 
 
 ### Backend Environment Variables
 
-Create `.env` file in `kinddevs2024-GlobalOlimpiad-v2.2_backend/`:
+Create `.env` file in `UNI-STEM-beckend/`:
 
 ```env
 # Required
@@ -98,11 +98,11 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 ### Frontend Environment Variables
 
-Create `.env` file in `GlobalOlimpiad-v2.2/` (optional, can use defaults):
+Create `.env` file in `UNI-STEM-Front/` (optional, can use defaults):
 
 ```env
-VITE_API_URL=https://api.olympiad.example.com/api
-VITE_SOCKET_URL=https://api.olympiad.example.com
+VITE_API_URL=https://api.unistem.example.com/api
+VITE_SOCKET_URL=https://api.unistem.example.com
 VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
 
@@ -119,7 +119,7 @@ VITE_SOCKET_URL=
 ### 3.1 Install Dependencies
 
 ```bash
-cd kinddevs2024-GlobalOlimpiad-v2.2_backend
+cd UNI-STEM-beckend
 npm install --production
 ```
 
@@ -183,7 +183,7 @@ pm2 delete olympiad-backend   # Remove
 ### 4.1 Install Dependencies
 
 ```bash
-cd GlobalOlimpiad-v2.2
+cd UNI-STEM-Front
 npm install
 ```
 
@@ -220,7 +220,7 @@ server {
     ssl_certificate_key /path/to/private.key;
 
     # Frontend
-    root /path/to/GlobalOlimpiad-v2.2/dist;
+    root /path/to/UNI-STEM-Front/dist;
     index index.html;
 
     # SPA routing - serve index.html for all routes
@@ -305,7 +305,7 @@ If using separate domains for frontend and backend, or need more control:
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name api.olympiad.example.com;
+    server_name api.unistem.example.com;
 
     ssl_certificate /path/to/certificate.crt;
     ssl_certificate_key /path/to/private.key;
@@ -338,7 +338,7 @@ server {
 
 Test backend health endpoint:
 ```bash
-curl https://api.olympiad.example.com/api/health
+curl https://api.unistem.example.com/api/health
 ```
 
 Expected response:
@@ -532,7 +532,7 @@ tar -czf uploads-backup-$(date +%Y%m%d).tar.gz uploads/
 
 3. **Rebuild frontend** (if frontend changed)
    ```bash
-   cd GlobalOlimpiad-v2.2
+   cd UNI-STEM-Front
    npm run build
    ```
 

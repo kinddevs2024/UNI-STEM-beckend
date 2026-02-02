@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     const skip = (page - 1) * limit;
 
     // Get only visible olympiads (public endpoint - students can only see visible olympiads)
-    const allOlympiads = getAllOlympiadsWithCreators();
+    const allOlympiads = await getAllOlympiadsWithCreators();
     const filteredOlympiads = allOlympiads
       .filter(olympiad => olympiad.status === 'visible' || olympiad.status === 'published')
       .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));

@@ -8,6 +8,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync, existsSync } from 'fs';
 import { networkInterfaces } from 'os';
+import * as presenceStore from './lib/presence-store.js';
+import { flushPresenceToMongo } from './lib/presence-flush.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,15 +107,66 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOST || '0.0.0.0'; // Bind to all network interfaces
 const port = parseInt(process.env.PORT || '3000', 10);
 
+// CORS: strict origins in production; '*' in dev if not set
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  : dev ? ['*'] : ['http://localhost:5173', 'http://localhost:3000'];
+
+// Leaderboard broadcast throttle: max 1 per olympiad per 10s
+const LEADERBOARD_THROTTLE_MS = 10000;
+const leaderboardLastBroadcast = new Map();
+
+// Violation throttle: max 10 per attempt per minute (prevent cheat vector abuse)
+const VIOLATION_MAX_PER_MINUTE = 10;
+const VIOLATION_WINDOW_MS = 60000;
+const violationTimestamps = new Map();
+
 const app = next({ dev });
 const handle = app.getRequestHandler();
+
+// Swagger UI HTML - served directly to avoid React/script loading issues
+const SWAGGER_HTML = `<!DOCTYPE html>
+<html>
+<head>
+  <title>UNI STEM API Documentation</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js" crossorigin></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js" crossorigin></script>
+  <script>
+    window.onload = function() {
+      const ui = SwaggerUIBundle({
+        url: "/api/swagger.json",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "StandaloneLayout",
+        tryItOutEnabled: true
+      });
+    };
+  </script>
+</body>
+</html>`;
 
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     // Log incoming requests for debugging
     const startTime = Date.now();
+    const urlPath = parse(req.url, true).pathname;
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    
+
+    // Serve Swagger UI HTML directly (avoids blank React page)
+    if (req.method === 'GET' && (urlPath === '/api-docs' || urlPath === '/api-docs/')) {
+      res.setHeader('Content-Type', 'text/html');
+      res.end(SWAGGER_HTML);
+      return;
+    }
+
     try {
       const parsedUrl = parse(req.url, true);
       await handle(req, res, parsedUrl);
@@ -128,10 +181,10 @@ app.prepare().then(() => {
     }
   });
 
-  // Initialize Socket.io with CORS - allow all origins
+  // Initialize Socket.io with CORS - strict origins in production
   const io = new Server(httpServer, {
     cors: {
-      origin: '*',
+      origin: allowedOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],
@@ -168,41 +221,15 @@ app.prepare().then(() => {
       attemptId = attemptIdValue;
       console.log(`User ${socket.id} joined olympiad ${olympiadId}${attemptId ? ` (attempt: ${attemptId})` : ''}`);
 
-      // Start heartbeat tracking if attemptId provided
+      // Start heartbeat tracking (in-memory only, no DB write per heartbeat)
       if (attemptId && socket.userId) {
-        try {
-          const { default: connectMongoDB } = await import('./lib/mongodb.js');
-          const SessionHeartbeat = (await import('./models/SessionHeartbeat.js')).default;
-          await connectMongoDB();
+        presenceStore.update(attemptId, socket.id, 'connected', new Date());
 
-          // Update or create heartbeat
-          await SessionHeartbeat.findOneAndUpdate(
-            { attemptId, socketId: socket.id },
-            {
-              attemptId,
-              socketId: socket.id,
-              lastSeenAt: new Date(),
-              status: 'connected'
-            },
-            { upsert: true, new: true }
-          );
-
-          // Set up heartbeat interval (every 3 seconds)
-          heartbeatInterval = setInterval(async () => {
-            try {
-              await SessionHeartbeat.findOneAndUpdate(
-                { attemptId, socketId: socket.id },
-                { lastSeenAt: new Date(), status: 'connected' },
-                { upsert: true }
-              );
-              socket.emit('heartbeat-ack');
-            } catch (error) {
-              console.error('Heartbeat error:', error);
-            }
-          }, 3000);
-        } catch (error) {
-          console.error('Error setting up heartbeat:', error);
-        }
+        // Heartbeat interval: update in-memory presence only
+        heartbeatInterval = setInterval(() => {
+          presenceStore.update(attemptId, socket.id, 'connected', new Date());
+          socket.emit('heartbeat-ack');
+        }, 3000);
       }
     });
 
@@ -216,26 +243,21 @@ app.prepare().then(() => {
         heartbeatInterval = null;
       }
 
-      // Mark heartbeat as disconnected
+      // Persist disconnect immediately
       if (attemptId && socket.userId) {
+        presenceStore.update(attemptId, socket.id, 'disconnected', new Date());
         try {
-          const { default: connectMongoDB } = await import('./lib/mongodb.js');
-          const SessionHeartbeat = (await import('./models/SessionHeartbeat.js')).default;
-          await connectMongoDB();
-
-          await SessionHeartbeat.findOneAndUpdate(
-            { attemptId, socketId: socket.id },
-            { status: 'disconnected', lastSeenAt: new Date() }
-          );
+          await flushPresenceToMongo();
+          presenceStore.remove(attemptId, socket.id);
         } catch (error) {
-          console.error('Error updating heartbeat on leave:', error);
+          console.error('Error persisting heartbeat on leave:', error);
         }
       }
 
       console.log(`User ${socket.id} left olympiad ${olympiadId}`);
     });
 
-    // Client heartbeat (sent from client every 3-5 seconds)
+    // Client heartbeat (sent from client every 3-5 seconds) - in-memory only, no DB write
     socket.on('heartbeat', async (data) => {
       const attemptIdValue = data?.attemptId || attemptId;
       const clientNow = data?.clientNow ? new Date(data.clientNow) : null;
@@ -246,10 +268,8 @@ app.prepare().then(() => {
           const { checkWebSocketRateLimit } = await import('./lib/rate-limiting.js');
           const rateLimitResult = checkWebSocketRateLimit('heartbeat', attemptIdValue, socket.userId.toString(), socket.id);
           if (!rateLimitResult.allowed) {
-            // Rate limit exceeded - log but don't block (heartbeat is critical)
             console.warn(`Rate limit exceeded for heartbeat: ${socket.id}`);
             socket.emit('rate-limit-warning', { remaining: rateLimitResult.remaining, resetAt: rateLimitResult.resetAt });
-            // Still process heartbeat, but log violation
             const { default: connectMongoDB } = await import('./lib/mongodb.js');
             const Attempt = (await import('./models/Attempt.js')).default;
             await connectMongoDB();
@@ -258,47 +278,34 @@ app.prepare().then(() => {
               attempt.violations.push({
                 type: 'RATE_LIMIT_EXCEEDED',
                 timestamp: new Date(),
-                details: {
-                  endpoint: 'websocket:heartbeat',
-                  limit: rateLimitResult.limit
-                }
+                details: { endpoint: 'websocket:heartbeat', limit: rateLimitResult.limit },
               });
               await attempt.save();
             }
           }
 
-          const { default: connectMongoDB } = await import('./lib/mongodb.js');
-          const SessionHeartbeat = (await import('./models/SessionHeartbeat.js')).default;
-          const { detectMissedHeartbeats } = await import('./lib/heartbeat-enforcement.js');
-          await connectMongoDB();
-
           const now = new Date();
-          
-          // Get previous heartbeat to check for missed heartbeats
-          const previousHeartbeat = await SessionHeartbeat.findOne({
-            attemptId: attemptIdValue,
-            socketId: socket.id
-          });
+          const previousHeartbeat = presenceStore.get(attemptIdValue, socket.id);
 
-          // Update heartbeat record
-          await SessionHeartbeat.findOneAndUpdate(
-            { attemptId: attemptIdValue, socketId: socket.id },
-            { lastSeenAt: now, status: 'connected' },
-            { upsert: true }
-          );
+          // Update in-memory presence only (no DB write)
+          presenceStore.update(attemptIdValue, socket.id, 'connected', now);
 
-          // Check for missed heartbeats using previous lastSeenAt
+          // Check for missed heartbeats using previous lastSeenAt (async, non-blocking)
           if (previousHeartbeat && previousHeartbeat.lastSeenAt) {
-            await detectMissedHeartbeats(attemptIdValue, previousHeartbeat.lastSeenAt);
+            const { detectMissedHeartbeats } = await import('./lib/heartbeat-enforcement.js');
+            detectMissedHeartbeats(attemptIdValue, previousHeartbeat.lastSeenAt).catch((err) =>
+              console.error('detectMissedHeartbeats error:', err)
+            );
           }
 
-          // Check time drift if client timestamp provided
+          // Time drift check - DB write only on anomaly
           if (clientNow) {
             const drift = Math.abs(now - clientNow);
-            const MAX_DRIFT_MS = 10000; // 10 seconds
+            const MAX_DRIFT_MS = 10000;
             if (drift > MAX_DRIFT_MS) {
-              // Log time drift anomaly
+              const { default: connectMongoDB } = await import('./lib/mongodb.js');
               const Attempt = (await import('./models/Attempt.js')).default;
+              await connectMongoDB();
               const attempt = await Attempt.findById(attemptIdValue);
               if (attempt) {
                 attempt.violations.push({
@@ -307,8 +314,8 @@ app.prepare().then(() => {
                   details: {
                     serverTime: now.toISOString(),
                     clientTime: clientNow.toISOString(),
-                    driftMs: drift
-                  }
+                    driftMs: drift,
+                  },
                 });
                 await attempt.save();
               }
@@ -343,38 +350,46 @@ app.prepare().then(() => {
       }
     });
 
-    // Violation report from client
+    // Violation report from client (throttled: max 10/min per attempt)
     socket.on('violation-report', async (data) => {
       const { attemptId: attemptIdValue, violationType, details } = data || {};
-      if (attemptIdValue && violationType && socket.userId) {
-        try {
-          const { default: connectMongoDB } = await import('./lib/mongodb.js');
-          const Attempt = (await import('./models/Attempt.js')).default;
-          const { createAuditLog } = await import('./lib/audit-logger.js');
-          await connectMongoDB();
+      if (!attemptIdValue || !violationType || !socket.userId) return;
 
-          const attempt = await Attempt.findById(attemptIdValue);
-          if (attempt && attempt.userId.toString() === socket.userId.toString()) {
-            // Add violation (validation handled in API endpoint)
-            attempt.violations.push({
-              type: violationType,
-              timestamp: new Date(),
-              details: details || {}
-            });
-            await attempt.save();
+      const key = attemptIdValue.toString();
+      const now = Date.now();
+      let timestamps = violationTimestamps.get(key) || [];
+      timestamps = timestamps.filter((t) => now - t < VIOLATION_WINDOW_MS);
+      if (timestamps.length >= VIOLATION_MAX_PER_MINUTE) {
+        return; // Silently drop; no DB write
+      }
+      timestamps.push(now);
+      violationTimestamps.set(key, timestamps);
 
-            // Log audit
-            await createAuditLog({
-              attemptId: attempt._id,
-              userId: attempt.userId,
-              olympiadId: attempt.olympiadId,
-              eventType: 'violation',
-              metadata: { violationType, details, source: 'websocket' }
-            });
-          }
-        } catch (error) {
-          console.error('Violation report error:', error);
+      try {
+        const { default: connectMongoDB } = await import('./lib/mongodb.js');
+        const Attempt = (await import('./models/Attempt.js')).default;
+        const { createAuditLog } = await import('./lib/audit-logger.js');
+        await connectMongoDB();
+
+        const attempt = await Attempt.findById(attemptIdValue);
+        if (attempt && attempt.userId.toString() === socket.userId.toString()) {
+          attempt.violations.push({
+            type: violationType,
+            timestamp: new Date(),
+            details: details || {},
+          });
+          await attempt.save();
+
+          await createAuditLog({
+            attemptId: attempt._id,
+            userId: attempt.userId,
+            olympiadId: attempt.olympiadId,
+            eventType: 'violation',
+            metadata: { violationType, details, source: 'websocket' },
+          });
         }
+      } catch (error) {
+        console.error('Violation report error:', error);
       }
     });
 
@@ -383,9 +398,15 @@ app.prepare().then(() => {
       socket.to(`olympiad-${data.olympiadId}`).emit('timer-update', data);
     });
 
-    // Leaderboard update
+    // Leaderboard update (throttled: max 1 broadcast per olympiad per 10s)
     socket.on('leaderboard-update', (data) => {
-      io.to(`olympiad-${data.olympiadId}`).emit('leaderboard-update', data);
+      const olympiadId = data?.olympiadId;
+      if (!olympiadId) return;
+      const now = Date.now();
+      const last = leaderboardLastBroadcast.get(olympiadId) || 0;
+      if (now - last < LEADERBOARD_THROTTLE_MS) return;
+      leaderboardLastBroadcast.set(olympiadId, now);
+      io.to(`olympiad-${olympiadId}`).emit('leaderboard-update', data);
     });
 
     // Submission notification
@@ -403,21 +424,17 @@ app.prepare().then(() => {
         heartbeatInterval = null;
       }
 
-      // Mark heartbeat as disconnected
+      // Persist disconnect immediately, then remove from presence
       if (attemptId && socket.userId) {
+        presenceStore.update(attemptId, socket.id, 'disconnected', new Date());
         try {
+          await flushPresenceToMongo();
+          presenceStore.remove(attemptId, socket.id);
+
           const { default: connectMongoDB } = await import('./lib/mongodb.js');
-          const SessionHeartbeat = (await import('./models/SessionHeartbeat.js')).default;
           const Attempt = (await import('./models/Attempt.js')).default;
           const { createAuditLog } = await import('./lib/audit-logger.js');
           await connectMongoDB();
-
-          await SessionHeartbeat.findOneAndUpdate(
-            { attemptId, socketId: socket.id },
-            { status: 'disconnected', lastSeenAt: new Date() }
-          );
-
-          // Log disconnect
           const attempt = await Attempt.findById(attemptId);
           if (attempt) {
             await createAuditLog({
@@ -425,7 +442,7 @@ app.prepare().then(() => {
               userId: attempt.userId,
               olympiadId: attempt.olympiadId,
               eventType: 'disconnect',
-              metadata: { socketId: socket.id }
+              metadata: { socketId: socket.id },
             });
           }
         } catch (error) {
@@ -434,6 +451,16 @@ app.prepare().then(() => {
       }
     });
   });
+
+  // Batch flush presence to MongoDB every 20 seconds
+  const PRESENCE_FLUSH_INTERVAL_MS = 20000;
+  const presenceFlushInterval = setInterval(() => {
+    flushPresenceToMongo().catch((err) => console.error('Presence flush error:', err));
+  }, PRESENCE_FLUSH_INTERVAL_MS);
+
+  // Clear flush interval on shutdown
+  process.on('SIGTERM', () => clearInterval(presenceFlushInterval));
+  process.on('SIGINT', () => clearInterval(presenceFlushInterval));
 
   // Function to get local IP address
   const getLocalIP = () => {

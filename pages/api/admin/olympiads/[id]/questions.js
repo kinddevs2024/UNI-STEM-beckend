@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     await connectDB();
 
     const { id: olympiadId } = req.query;
-    const olympiad = findOlympiadById(olympiadId);
+    const olympiad = await findOlympiadById(olympiadId);
 
     if (!olympiad) {
       return res.status(404).json({ 
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
             continue;
           }
 
-          const questionDoc = createQuestion({
+          const questionDoc = await createQuestion({
             olympiadId,
             question: q.question,
             type: q.type,
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
       }
 
       // Recalculate total points
-      const allQuestions = findQuestionsByOlympiadId(olympiadId);
+      const allQuestions = await findQuestionsByOlympiadId(olympiadId);
       const totalPoints = allQuestions.reduce((sum, q) => sum + (q.points || 0), 0);
       updateOlympiad(olympiadId, { totalPoints });
 
@@ -126,10 +126,10 @@ export default async function handler(req, res) {
     }
 
     // Get current question count for ordering
-    const existingQuestions = findQuestionsByOlympiadId(olympiadId);
+    const existingQuestions = await findQuestionsByOlympiadId(olympiadId);
     const questionOrder = order !== undefined ? order : existingQuestions.length;
 
-    const questionDoc = createQuestion({
+    const questionDoc = await createQuestion({
       olympiadId,
       question,
       type,
@@ -140,7 +140,7 @@ export default async function handler(req, res) {
     });
 
     // Recalculate total points
-    const allQuestions = findQuestionsByOlympiadId(olympiadId);
+    const allQuestions = await findQuestionsByOlympiadId(olympiadId);
     const totalPoints = allQuestions.reduce((sum, q) => sum + (q.points || 0), 0);
     updateOlympiad(olympiadId, { totalPoints });
 

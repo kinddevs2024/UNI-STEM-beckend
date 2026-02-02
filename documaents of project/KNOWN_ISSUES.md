@@ -18,9 +18,9 @@ These issues should be addressed before production launch, especially for high-t
 The `normalizeTheme` function in `portfolioThemes.js` doesn't preserve `containerWidth` when normalizing themes. The field is manually restored in `PortfolioView` and `PortfolioConstructor`, but this workaround could be bypassed if `normalizeTheme` is called directly elsewhere.
 
 **Location**:  
-- `GlobalOlimpiad-v2.2/src/utils/portfolioThemes.js` - normalizeTheme function
-- `GlobalOlimpiad-v2.2/src/components/PortfolioView/PortfolioView.jsx` - Manual restoration
-- `GlobalOlimpiad-v2.2/src/components/PortfolioConstructor/PortfolioConstructor.jsx` - Manual restoration
+- `UNI-STEM-Front/src/utils/portfolioThemes.js` - normalizeTheme function
+- `UNI-STEM-Front/src/components/PortfolioView/PortfolioView.jsx` - Manual restoration
+- `UNI-STEM-Front/src/components/PortfolioConstructor/PortfolioConstructor.jsx` - Manual restoration
 
 **Current Workaround**:  
 Container width is manually restored after normalization in components that use it.
@@ -44,7 +44,7 @@ Preserve `containerWidth` directly in the `normalizeTheme` function to ensure it
 The frontend uses `getPaginatedPortfolios()` to slice results on the client side, while the backend returns proper pagination metadata (page, limit, total, pages). This means all portfolios are loaded into memory before pagination occurs.
 
 **Location**:  
-- Frontend: `GlobalOlimpiad-v2.2/src/pages/UniversityPanel/UniversityPanel.jsx`
+- Frontend: `UNI-STEM-Front/src/pages/UniversityPanel/UniversityPanel.jsx`
 - Backend: Returns pagination metadata but frontend ignores it
 
 **Current Behavior**:  
@@ -111,7 +111,7 @@ Backend portfolio query logic (likely in portfolio API endpoint)
 `portfolio.css` uses hardcoded `2rem` padding in container width variants instead of using design tokens (`--spacing-base`) for consistency.
 
 **Location**:  
-`GlobalOlimpiad-v2.2/src/styles/portfolio.css`
+`UNI-STEM-Front/src/styles/portfolio.css`
 
 **Current Implementation**:  
 ```css
@@ -172,9 +172,9 @@ Minor - animations may occasionally appear janky, but functionality is not affec
 Some components (InlineTextEditor, EmulatorBlock, CookieConsentModal) still use hardcoded `px` values instead of design tokens.
 
 **Components Affected**:  
-- `GlobalOlimpiad-v2.2/src/components/InlineTextEditor/`
-- `GlobalOlimpiad-v2.2/src/components/EmulatorBlock/`
-- `GlobalOlimpiad-v2.2/src/components/CookieConsentModal/`
+- `UNI-STEM-Front/src/components/InlineTextEditor/`
+- `UNI-STEM-Front/src/components/EmulatorBlock/`
+- `UNI-STEM-Front/src/components/CookieConsentModal/`
 
 **Recommended Fix**:  
 Migrate hardcoded spacing values to use design tokens gradually.
@@ -216,7 +216,7 @@ Performance improvement would be significant with large datasets, but current im
 The max-width values (800px, 1200px, 1600px) in `portfolio.css` could be design tokens for easier maintenance.
 
 **Location**:  
-`GlobalOlimpiad-v2.2/src/styles/portfolio.css`
+`UNI-STEM-Front/src/styles/portfolio.css`
 
 **Recommended Fix**:  
 Extract max-width values to CSS custom properties in design tokens.

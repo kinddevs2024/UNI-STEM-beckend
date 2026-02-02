@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     }
 
     // Find result
-    const result = findResultById(resultId);
+    const result = await findResultById(resultId);
     if (!result) {
       return res.status(404).json({ 
         success: false,
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     }
 
     // Update visibility
-    const updatedResult = updateResult(resultId, {
+    const updatedResult = await updateResult(resultId, {
       visible: visible,
     });
 

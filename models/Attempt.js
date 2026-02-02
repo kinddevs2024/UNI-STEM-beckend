@@ -172,8 +172,14 @@ const attemptSchema = new mongoose.Schema({
 // Compound index to enforce one attempt per user per olympiad
 attemptSchema.index({ userId: 1, olympiadId: 1 }, { unique: true });
 
+// Index for querying by olympiad and user
+attemptSchema.index({ olympiadId: 1, userId: 1 });
+
 // Index for querying active attempts
 attemptSchema.index({ status: 1, endsAt: 1 });
+
+// Index for admin queries (list attempts by recency)
+attemptSchema.index({ createdAt: -1 });
 
 // Force recompilation in dev
 if (process.env.NODE_ENV === 'development') {

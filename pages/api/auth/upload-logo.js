@@ -108,7 +108,7 @@ export default async function handler(req, res) {
 
     // Get current user
     const userId = authResult.user._id.toString();
-    const currentUser = findUserById(userId);
+    const currentUser = await findUserById(userId);
     
     if (!currentUser) {
       return res.status(404).json({

@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     const skip = (page - 1) * limit;
     
     // Get all submissions and filter by query params
-    let submissions = getAllSubmissions();
+    let submissions = await getAllSubmissions();
     
     if (olympiadId) {
       submissions = submissions.filter(sub => sub.olympiadId === olympiadId);
@@ -59,11 +59,11 @@ export default async function handler(req, res) {
 
     // Group submissions by user and olympiad
     const submissionMap = {};
-    submissions.forEach(sub => {
+    for (const sub of submissions) {
       const key = `${sub.userId}_${sub.olympiadId}`;
       if (!submissionMap[key]) {
-        const user = findUserById(sub.userId);
-        const olympiad = findOlympiadById(sub.olympiadId);
+        const user = await findUserById(sub.userId);
+        const olympiad = await findOlympiadById(sub.olympiadId);
         
         submissionMap[key] = {
           _id: sub._id,
@@ -84,12 +84,12 @@ export default async function handler(req, res) {
       // Add answer to the grouped submission
       submissionMap[key].answers[sub.questionId] = sub.answer;
       submissionMap[key].score += sub.score || 0;
-    });
+    }
 
     // Get total points for each olympiad
     const olympiadIds = [...new Set(submissions.map(s => s.olympiadId))];
-    olympiadIds.forEach(olyId => {
-      const questions = findQuestionsByOlympiadId(olyId);
+    for (const olyId of olympiadIds) {
+      const questions = await findQuestionsByOlympiadId(olyId);
       const totalPoints = questions.reduce((sum, q) => sum + (q.points || 0), 0);
       
       Object.values(submissionMap).forEach(sub => {
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
           sub.totalPoints = totalPoints;
         }
       });
-    });
+    }
 
     res.json({
       success: true,

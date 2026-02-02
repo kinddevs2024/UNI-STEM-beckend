@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     try {
-      const olympiad = getOlympiadWithCreator(id);
+      const olympiad = await getOlympiadWithCreator(id);
 
       if (!olympiad) {
         return res.status(404).json({ 
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       
       // First, try to get questions from the olympiad's questions array
       if (olympiad.questions && Array.isArray(olympiad.questions) && olympiad.questions.length > 0) {
-        const allQuestions = getAllQuestions();
+        const allQuestions = await getAllQuestions();
         questions = olympiad.questions
           .map(qId => {
             if (typeof qId === 'string') {
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
       
       // If no questions found from array, try finding by olympiadId (fallback)
       if (questions.length === 0) {
-        questions = findQuestionsByOlympiadId(olympiad._id);
+        questions = await findQuestionsByOlympiadId(olympiad._id);
       }
       
       // Sort and format questions

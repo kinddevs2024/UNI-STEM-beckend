@@ -4,6 +4,7 @@ import Attempt from '../../../../models/Attempt.js';
 import ProctoringSession from '../../../../models/ProctoringSession.js';
 import { shouldTerminateAttempt } from '../../../../lib/anti-cheat-validator.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
+import { validateViolationInput } from '../../../../lib/olympiad-input-validation.js';
 
 /**
  * Report violation event
@@ -32,10 +33,11 @@ export default async function handler(req, res) {
     const userId = authResult.user._id;
     const { violationType, details } = req.body;
 
-    if (!violationType) {
-      return res.status(400).json({ 
+    const inputValidation = validateViolationInput(req.body);
+    if (!inputValidation.valid) {
+      return res.status(400).json({
         success: false,
-        message: 'violationType is required' 
+        message: inputValidation.error,
       });
     }
 

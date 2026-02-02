@@ -84,7 +84,7 @@ export default function SwaggerDocs() {
   return (
     <>
       <Head>
-        <title>Olympiad Platform API Documentation</title>
+        <title>UNI STEM API Documentation</title>
         <style>{`
           html {
             box-sizing: border-box;
