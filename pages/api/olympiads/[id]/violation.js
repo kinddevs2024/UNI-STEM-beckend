@@ -6,6 +6,8 @@ import { shouldTerminateAttempt } from '../../../../lib/anti-cheat-validator.js'
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 import { validateViolationInput } from '../../../../lib/olympiad-input-validation.js';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 /**
  * Report violation event
  * POST /api/olympiads/[id]/violation
@@ -14,6 +16,7 @@ import { validateViolationInput } from '../../../../lib/olympiad-input-validatio
  * May terminate attempt if violation threshold exceeded.
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

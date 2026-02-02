@@ -10,6 +10,8 @@ import { bindDeviceToAttempt } from '../../../../lib/device-locking.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 import crypto from 'crypto';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 /**
  * Start an olympiad attempt
  * POST /api/olympiads/[id]/start
@@ -18,6 +20,7 @@ import crypto from 'crypto';
  * Requires proctoring to be set up (camera + screen share with displaySurface === "monitor").
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

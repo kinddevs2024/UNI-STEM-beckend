@@ -10,6 +10,8 @@ import { validateAnswerNonce, checkAnswerTimeWindow, rejectReplayedAnswer } from
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 import { createSubmission } from '../../../../lib/submission-helper.js';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 /**
  * Submit answer for current question
  * POST /api/olympiads/[id]/answer
@@ -18,6 +20,7 @@ import { createSubmission } from '../../../../lib/submission-helper.js';
  * Auto-advances to next question after submission.
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

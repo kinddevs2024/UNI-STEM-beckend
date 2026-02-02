@@ -3,12 +3,15 @@ import { findOlympiadById, updateOlympiad } from '../../../../../lib/olympiad-he
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Update olympiad status (visible/unvisible)
  * Only admin and owner can control status
  * PUT /api/admin/olympiads/:id/status
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'PUT') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

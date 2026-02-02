@@ -3,6 +3,8 @@ import { getOlympiadWithCreator } from '../../../lib/olympiad-helper.js';
 import { getAllQuestions, findQuestionsByOlympiadId } from '../../../lib/question-helper.js';
 import { protect } from '../../../lib/auth.js';
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 /**
  * @swagger
  * /olympiads/{id}:
@@ -31,6 +33,7 @@ import { protect } from '../../../lib/auth.js';
  *         description: Olympiad not found
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   // Set cache-control headers to prevent caching
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');

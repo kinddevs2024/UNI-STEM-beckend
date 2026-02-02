@@ -7,6 +7,8 @@ import ffmpeg from "fluent-ffmpeg";
 import { enqueue } from "../../../../lib/ffmpeg-queue.js";
 import { fileURLToPath } from "url";
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,6 +18,7 @@ const __dirname = path.dirname(__filename);
  * Body: { olympiadId, sessionId }
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
   }

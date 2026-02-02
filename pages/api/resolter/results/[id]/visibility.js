@@ -3,11 +3,14 @@ import { findResultById, updateResult } from '../../../../../lib/result-helper.j
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Change result visibility (Resolter only)
  * PUT /api/resolter/results/:id/visibility
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'PUT') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

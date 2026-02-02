@@ -2,6 +2,8 @@ import { protect } from '../../../../../lib/auth.js';
 import connectMongoDB from '../../../../../lib/mongodb.js';
 import { invalidateAttempt } from '../../../../../lib/emergency-controls.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Admin endpoint to invalidate an attempt
  * POST /api/admin/attempts/[attemptId]/invalidate
@@ -9,6 +11,7 @@ import { invalidateAttempt } from '../../../../../lib/emergency-controls.js';
  * Requires admin role.
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

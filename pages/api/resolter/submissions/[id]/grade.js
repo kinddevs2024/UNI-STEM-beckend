@@ -7,11 +7,14 @@ import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
 import { analyzeText } from '../../../../../lib/text-analysis.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Grade/Edit essay submission (Resolter only)
  * PUT /api/resolter/submissions/:id/grade
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'PUT') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

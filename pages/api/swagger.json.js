@@ -1,6 +1,8 @@
 import { getSwaggerSpec } from '../../lib/swagger.js';
 import { networkInterfaces } from 'os';
 
+import { handleCORS } from '../../lib/api-helpers.js';
+
 // Function to get local IP address
 const getLocalIP = () => {
   const interfaces = networkInterfaces();
@@ -15,6 +17,7 @@ const getLocalIP = () => {
 };
 
 export default function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method === 'GET') {
     // Get the hostname from the request
     const host = req.headers.host || `localhost:${process.env.PORT || 3000}`;

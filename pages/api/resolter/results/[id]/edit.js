@@ -4,6 +4,8 @@ import { findOlympiadById } from '../../../../../lib/olympiad-helper.js';
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Edit/Update result directly (Resolter only)
  * PUT /api/resolter/results/:id/edit
@@ -11,6 +13,7 @@ import { authorize } from '../../../../../lib/auth.js';
  * Allows resolter to directly update result scores and percentages
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'PUT') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

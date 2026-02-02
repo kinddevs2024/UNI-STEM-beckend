@@ -6,6 +6,8 @@ import { validateAttemptActive } from '../../../../lib/anti-cheat-validator.js';
 import { getTimerStatus, isTimeExpired } from '../../../../lib/timer-service.js';
 import { checkHeartbeatCompliance } from '../../../../lib/heartbeat-enforcement.js';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 /**
  * Get current attempt status
  * GET /api/olympiads/[id]/attempt
@@ -13,6 +15,7 @@ import { checkHeartbeatCompliance } from '../../../../lib/heartbeat-enforcement.
  * Returns current attempt status, timer information, and question progress.
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

@@ -3,6 +3,8 @@ import * as olympiadHelperModule from '../../../lib/olympiad-helper.js';
 import { protect } from '../../../lib/auth.js';
 import { authorize } from '../../../lib/auth.js';
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 /**
  * @swagger
  * /admin/olympiads:
@@ -77,6 +79,7 @@ import { authorize } from '../../../lib/auth.js';
  *         description: Forbidden - Admin access required
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

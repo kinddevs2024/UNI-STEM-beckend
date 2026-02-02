@@ -3,6 +3,8 @@ import { findOlympiadById } from '../../../../lib/olympiad-helper.js';
 import { saveDraft, findDraftByUserAndOlympiad } from '../../../../lib/draft-helper.js';
 import { protect } from '../../../../lib/auth.js';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 /**
  * @swagger
  * /olympiads/{id}/save-draft:
@@ -39,6 +41,7 @@ import { protect } from '../../../../lib/auth.js';
  *         description: Olympiad not found
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

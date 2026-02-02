@@ -10,9 +10,12 @@ import {
 import fs from "fs";
 import path from "path";
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 export { config };
 
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
   }

@@ -4,6 +4,8 @@ import { findOlympiadById, updateOlympiad } from '../../../../../lib/olympiad-he
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Add questions/tasks to an olympiad
  * POST /api/admin/olympiads/:id/questions
@@ -13,6 +15,7 @@ import { authorize } from '../../../../../lib/auth.js';
  * - Multiple questions: { questions: [{ question, type, ... }, ...] }
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

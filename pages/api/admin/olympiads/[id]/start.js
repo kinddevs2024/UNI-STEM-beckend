@@ -3,11 +3,14 @@ import { findOlympiadById, updateOlympiad } from '../../../../../lib/olympiad-he
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Start an olympiad (admin/owner only)
  * POST /api/admin/olympiads/:id/start
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

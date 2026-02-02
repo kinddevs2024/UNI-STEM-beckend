@@ -6,7 +6,10 @@ import { getAllResults } from '../../../lib/result-helper.js';
 import { protect } from '../../../lib/auth.js';
 import { authorize } from '../../../lib/auth.js';
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

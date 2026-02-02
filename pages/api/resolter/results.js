@@ -12,11 +12,14 @@ import { findUserById } from "../../../lib/user-helper.js";
 import { protect } from "../../../lib/auth.js";
 import { authorize } from "../../../lib/auth.js";
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 /**
  * Get all results for an olympiad (Resolter only)
  * GET /api/resolter/results?olympiadId=:id
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   // Set cache-control headers to prevent caching
   res.setHeader(
     "Cache-Control",

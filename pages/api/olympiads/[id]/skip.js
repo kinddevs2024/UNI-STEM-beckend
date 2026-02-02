@@ -9,6 +9,8 @@ import { findQuestionsByOlympiadId } from '../../../../lib/question-helper.js';
 import { connectDB } from '../../../../lib/json-db.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 /**
  * Skip current question (triggered on tab close/refresh)
  * POST /api/olympiads/[id]/skip
@@ -17,6 +19,7 @@ import { createAuditLog } from '../../../../lib/audit-logger.js';
  * Called when user closes tab, refreshes page, or navigates away.
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

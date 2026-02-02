@@ -2,11 +2,14 @@ import { protect } from '../../../lib/auth.js';
 import connectMongoDB from '../../../lib/mongodb.js';
 import User from '../../../models/User.js';
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 /**
  * GET /api/auth/balance
  * Returns current user's coin balance. Lightweight endpoint for refresh.
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }

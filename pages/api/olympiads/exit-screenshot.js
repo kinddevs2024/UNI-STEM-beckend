@@ -1,6 +1,8 @@
 import connectDB from "../../../lib/mongodb.js";
 import CameraCapture from "../../../models/CameraCapture.js";
 import { protect } from "../../../lib/auth.js";
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 import {
   parseForm,
   saveFile,
@@ -33,6 +35,7 @@ export { config };
  *   }
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== "POST") {
     return res.status(405).json({
       success: false,

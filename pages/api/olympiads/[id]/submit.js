@@ -16,6 +16,8 @@ import { runPostAttemptVerification } from '../../../../lib/post-attempt-verific
 import { calculateAndStoreTrustScore } from '../../../../lib/anti-cheat-scoring.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 /**
  * @swagger
  * /olympiads/{id}/submit:
@@ -69,6 +71,7 @@ import { createAuditLog } from '../../../../lib/audit-logger.js';
  *         description: Olympiad not found
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

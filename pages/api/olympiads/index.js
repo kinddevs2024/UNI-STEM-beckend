@@ -1,6 +1,7 @@
 import { connectDB } from '../../../lib/json-db.js';
 import { findOlympiadsByStatus, getAllOlympiadsWithCreators } from '../../../lib/olympiad-helper.js';
 import { protect } from '../../../lib/auth.js';
+import { handleCORS } from '../../../lib/api-helpers.js';
 
 /**
  * @swagger
@@ -27,6 +28,7 @@ import { protect } from '../../../lib/auth.js';
  *               $ref: '#/components/schemas/Error'
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   // Set cache-control headers to prevent caching
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');

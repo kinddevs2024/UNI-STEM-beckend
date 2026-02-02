@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -11,6 +13,7 @@ const __dirname = path.dirname(__filename);
  * GET /api/uploads/filename.mp4
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== "GET") {
     return res.status(405).json({ message: "Method not allowed" });
   }

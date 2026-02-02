@@ -9,6 +9,8 @@ import { validateDeviceFingerprint } from '../../../../../lib/device-locking.js'
 import { issueQuestionNonce } from '../../../../../lib/replay-protection.js';
 import { createAuditLog } from '../../../../../lib/audit-logger.js';
 
+import { handleCORS } from '../../../../../lib/api-helpers.js';
+
 /**
  * Get question for attempt (forward-only navigation)
  * GET /api/olympiads/[id]/question/[questionIndex]
@@ -17,6 +19,7 @@ import { createAuditLog } from '../../../../../lib/audit-logger.js';
  * Updates currentQuestionIndex if advancing to next question.
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

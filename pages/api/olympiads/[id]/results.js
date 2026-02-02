@@ -9,7 +9,10 @@ import { protect, authorize } from '../../../../lib/auth.js';
 import { analyzeText } from '../../../../lib/text-analysis.js';
 import Olympiad from '../../../../models/Olympiad.js';
 
+import { handleCORS } from '../../../../lib/api-helpers.js';
+
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

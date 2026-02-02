@@ -6,11 +6,14 @@ import { findUserById, getAllUsers } from '../../../lib/user-helper.js';
 import { protect } from '../../../lib/auth.js';
 import { authorize } from '../../../lib/auth.js';
 
+import { handleCORS } from '../../../lib/api-helpers.js';
+
 /**
  * Get results for users from school-teacher's school
  * GET /api/school-teacher/results?olympiadId=:id
  */
 export default async function handler(req, res) {
+  if (handleCORS(req, res)) return;
   // Set cache-control headers to prevent caching
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');
