@@ -3,11 +3,17 @@ export function handleCORS(req, res) {
   const origin = req.headers.origin;
 
   // Recommended: set FRONTEND_URL in environment to the exact frontend origin
-  const defaultFrontend = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
-  const allowedOrigins = [defaultFrontend, 'http://localhost:5173'].filter(Boolean);
+  const defaultFrontend =
+    process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
+  const allowedOrigins = [
+    ...(process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+      : [defaultFrontend, 'http://localhost:5173', 'http://localhost:3000']),
+  ];
 
   // Allow server-to-server requests (no Origin header)
-  const originAllowed = !origin || allowedOrigins.includes(origin);
+  const originAllowed =
+    !origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin);
 
   function setCorsHeaders() {
     // If origin is undefined (server requests), use the default frontend as Access-Control-Allow-Origin
