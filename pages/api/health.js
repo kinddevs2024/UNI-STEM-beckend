@@ -1,16 +1,14 @@
 import connectDB from '../../lib/mongodb.js';
 import mongoose from 'mongoose';
 import { getDiskSpaceInfo } from '../../lib/disk-space.js';
+import { handleCORS } from '../../lib/api-helpers.js';
 
 /**
  * Health check endpoint - for monitoring and load balancers
  * GET /api/health
  */
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  if (handleCORS(req, res)) return;
 
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });

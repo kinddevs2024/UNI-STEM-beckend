@@ -10,10 +10,14 @@ export function handleCORS(req, res) {
       ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
       : [defaultFrontend, 'http://localhost:5173', 'http://localhost:3000']),
   ];
+  const vercelPreviewRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
   // Allow server-to-server requests (no Origin header)
   const originAllowed =
-    !origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin);
+    !origin ||
+    allowedOrigins.includes('*') ||
+    allowedOrigins.includes(origin) ||
+    vercelPreviewRegex.test(origin);
 
   function setCorsHeaders() {
     // If origin is undefined (server requests), use the default frontend as Access-Control-Allow-Origin
