@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     const reservations = allReservations.slice(skip, skip + limit);
 
     // Add logo URL to each portfolio in reservations
-    const reservationsWithLogo = reservations.map((reservation) => {
+    const reservationsWithLogo = await Promise.all(reservations.map(async (reservation) => {
       const portfolio = reservation.portfolio;
       if (!portfolio) {
         return reservation;
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
           logo: logoUrl,
         },
       };
-    });
+    }));
 
     res.json({
       success: true,

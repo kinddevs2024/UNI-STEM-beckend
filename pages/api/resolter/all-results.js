@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     const skip = (page - 1) * limit;
 
     // Get all results
-    let allResults = getAllResults();
+    let allResults = await getAllResults();
     
     // Filter by olympiad if specified
     if (olympiadId) {
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
     // Group results by olympiad and populate with details
     const resultsByOlympiad = {};
     
-    allResults.forEach(result => {
+    for (const result of allResults) {
       if (!resultsByOlympiad[result.olympiadId]) {
         const olympiad = allOlympiads.find(o => o._id === result.olympiadId);
         resultsByOlympiad[result.olympiadId] = {
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
           aiProbability: sub.aiProbability || 0,
         })),
       });
-    });
+    }
 
     // Convert to array format
     const olympiadResults = Object.entries(resultsByOlympiad).map(([olympiadId, data]) => ({

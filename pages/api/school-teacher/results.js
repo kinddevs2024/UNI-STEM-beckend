@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     }
 
     // Get all users from the same school
-    const allUsers = getAllUsers();
+    const allUsers = await getAllUsers();
     const schoolUserIds = allUsers
       .filter(user => {
         // Match by schoolId if both have it, otherwise match by schoolName
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
     const skip = (page - 1) * limit;
 
     // Get all results for this olympiad
-    const allResults = findResultsByOlympiadId(olympiadId);
+    const allResults = await findResultsByOlympiadId(olympiadId);
     
     // Filter results to only include users from the same school
     const schoolResults = allResults.filter(result => 
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
     const allSubmissions = await findSubmissionsByOlympiadId(olympiadId);
 
     // Populate results with user info and submissions
-    const resultsWithDetails = paginatedResults.map((result, index) => {
+    const resultsWithDetails = await Promise.all(paginatedResults.map(async (result, index) => {
       const user = await findUserById(result.userId);
       const userSubmissions = allSubmissions.filter(s => s.userId === result.userId);
       
@@ -144,7 +144,7 @@ export default async function handler(req, res) {
           comment: sub.comment || null,
         })),
       };
-    });
+    }));
 
     return res.json({
       success: true,

@@ -1,7 +1,7 @@
-import { handleCORS } from '../../lib/api-helpers.js';
-import { protect } from '../../lib/auth.js';
-import connectMongoDB from '../../lib/mongodb.js';
-import CoinPurchase from '../../models/CoinPurchase.js';
+import { handleCORS } from '../../../lib/api-helpers.js';
+import { protect } from '../../../lib/auth.js';
+import connectMongoDB from '../../../lib/mongodb.js';
+import CoinPurchase from '../../../models/CoinPurchase.js';
 import crypto from 'crypto';
 
 /**

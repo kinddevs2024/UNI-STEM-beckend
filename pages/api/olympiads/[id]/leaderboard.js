@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         completedAt: result.completedAt,
         timeSpent: result.timeSpent || 0,
       };
-    });
+    }));
 
     res.json({
       success: true,

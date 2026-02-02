@@ -1,7 +1,7 @@
-import { handleCORS } from '../../lib/api-helpers.js';
-import connectMongoDB from '../../lib/mongodb.js';
-import User from '../../models/User.js';
-import CoinPurchase from '../../models/CoinPurchase.js';
+import { handleCORS } from '../../../lib/api-helpers.js';
+import connectMongoDB from '../../../lib/mongodb.js';
+import User from '../../../models/User.js';
+import CoinPurchase from '../../../models/CoinPurchase.js';
 
 /**
  * POST /api/payment/payme-webhook

@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     const skip = (page - 1) * limit;
 
     // Get all results for this olympiad
-    const allResults = findResultsByOlympiadId(olympiadId).sort((a, b) => {
+    const allResults = (await findResultsByOlympiadId(olympiadId)).sort((a, b) => {
       if (b.totalScore !== a.totalScore) {
         return b.totalScore - a.totalScore;
       }
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
     const allSubmissions = await findSubmissionsByOlympiadId(olympiadId);
 
     // Populate results with user info and submissions
-    const resultsWithDetails = paginatedResults.map((result, index) => {
+    const resultsWithDetails = await Promise.all(paginatedResults.map(async (result, index) => {
       const user = await findUserById(result.userId);
       const userSubmissions = allSubmissions.filter(
         (s) => s.userId === result.userId
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
           aiProbability: sub.aiProbability || 0,
         })),
       };
-    });
+    }));
 
     return res.json({
       success: true,

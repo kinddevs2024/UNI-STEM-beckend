@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       const limit = Math.min(parseInt(req.query.limit) || 20, 50);
       const skip = (page - 1) * limit;
       
-      const allResults = findResultsByOlympiadId(olympiadId)
+      const allResults = (await findResultsByOlympiadId(olympiadId))
         .sort((a, b) => {
           if (b.totalScore !== a.totalScore) {
             return b.totalScore - a.totalScore;
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       const total = allResults.length;
       const paginatedResults = allResults.slice(skip, skip + limit);
 
-      const allResultsWithUsers = paginatedResults.map((result, index) => {
+      const allResultsWithUsers = await Promise.all(paginatedResults.map(async (result, index) => {
         const user = await findUserById(result.userId);
         let position = '';
         if (index === 0) position = '🥇 1st Place';
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
           status: result.status || 'active', // Default to 'active' if not set
           _id: result._id,
         };
-      });
+      }));
 
       return res.json({
         success: true,
@@ -114,7 +114,7 @@ export default async function handler(req, res) {
     }
 
     // For students, return only their own result
-    const userResult = findResultByUserAndOlympiad(userId, olympiadId);
+    const userResult = await findResultByUserAndOlympiad(userId, olympiadId);
     if (!userResult) {
       return res.status(404).json({ 
         success: false,
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
 
     // Get all results to calculate rank
     // For rank calculation, include all results (to get accurate position)
-    const allResultsRaw = findResultsByOlympiadId(olympiadId);
+    const allResultsRaw = await findResultsByOlympiadId(olympiadId);
     const allResults = allResultsRaw
       .sort((a, b) => {
         if (b.totalScore !== a.totalScore) {
@@ -139,7 +139,7 @@ export default async function handler(req, res) {
     const publiclyViewableResults = allResults.filter(r => 
       (r.status === 'checked' && r.visible === true) || r.visible !== false
     );
-    const topFive = publiclyViewableResults.slice(0, 5).map((result, index) => {
+    const topFive = await Promise.all(publiclyViewableResults.slice(0, 5).map(async (result, index) => {
       const user = await findUserById(result.userId);
       
       // Determine position label
@@ -160,13 +160,13 @@ export default async function handler(req, res) {
         percentage: Math.round(result.percentage * 100) / 100,
         completedAt: result.completedAt,
       };
-    });
+    }));
 
     // Get user's submissions
-    const userSubmissions = findSubmissionsByUserAndOlympiad(userId, olympiadId);
+    const userSubmissions = await findSubmissionsByUserAndOlympiad(userId, olympiadId);
     
     // Get questions
-    const questions = findQuestionsByOlympiadId(olympiadId);
+    const questions = await findQuestionsByOlympiadId(olympiadId);
     
     // Build answers object
     const answers = {};
@@ -193,7 +193,7 @@ export default async function handler(req, res) {
     const essayAnalyses = {};
     if ((olympiad.type === 'essay' || olympiad.type === 'mixed') && userSubmissions.length > 0) {
       // Get other submissions for comparison
-      const otherSubmissions = findSubmissionsByOlympiadId(olympiadId)
+      const otherSubmissions = (await findSubmissionsByOlympiadId(olympiadId))
         .filter(s => s.userId !== userId);
       
       // For essay type, analyze the single essay
