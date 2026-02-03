@@ -7,6 +7,7 @@ import { protect } from "../../../../lib/auth.js";
 import { authorize } from "../../../../lib/auth.js";
 import { handleCORS } from "../../../../middleware/cors.js";
 import { parseForm, saveFile, config } from "../../../../lib/upload.js";
+import { getUploadBaseDir } from "../../../../lib/upload-path.js";
 import fs from "fs";
 import path from "path";
 
@@ -181,9 +182,10 @@ export default async function handler(req, res) {
         if (filePath.startsWith("/api/uploads/")) {
           filePath = filePath.replace("/api/uploads/", "");
         }
-        const oldLogoPath = path.join(process.cwd(), "uploads", filePath);
+        const uploadsBaseDir = getUploadBaseDir(process.env.UPLOAD_PATH || "./uploads");
+        const oldLogoPath = path.join(uploadsBaseDir, filePath);
         const normalizedOldPath = path.normalize(oldLogoPath);
-        const uploadsDir = path.normalize(path.join(process.cwd(), "uploads"));
+        const uploadsDir = path.normalize(uploadsBaseDir);
 
         // Security check: ensure path is within uploads directory
         if (
@@ -206,13 +208,8 @@ export default async function handler(req, res) {
     let fileUrl;
     try {
       // Create olympiad-specific folder: uploads/olympiads/{olympiadId}/
-      const uploadsBasePath = process.env.UPLOAD_PATH || "./uploads";
-      const olympiadFolder = path.join(
-        process.cwd(),
-        uploadsBasePath,
-        "olympiads",
-        olympiadId
-      );
+      const uploadsBasePath = getUploadBaseDir(process.env.UPLOAD_PATH || "./uploads");
+      const olympiadFolder = path.join(uploadsBasePath, "olympiads", olympiadId);
 
       // Create directory if it doesn't exist
       if (!fs.existsSync(olympiadFolder)) {

@@ -6,6 +6,7 @@ import path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import { enqueue } from "../../../../lib/ffmpeg-queue.js";
 import { fileURLToPath } from "url";
+import { getUploadBaseDir } from "../../../../lib/upload-path.js";
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
@@ -44,8 +45,8 @@ export default async function handler(req, res) {
     }
 
     // Find session directory
-    const uploadPath = process.env.UPLOAD_PATH || "./uploads";
-    const sessionDir = path.join(process.cwd(), uploadPath, "sessions", sessionId.toString());
+    const uploadBasePath = getUploadBaseDir(process.env.UPLOAD_PATH || "./uploads");
+    const sessionDir = path.join(uploadBasePath, "sessions", sessionId.toString());
 
     if (!fs.existsSync(sessionDir)) {
       return res.status(404).json({
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
 
     // Create output video path
     const outputFileName = `video-${sessionId}-${Date.now()}.mp4`;
-    const outputPath = path.join(process.cwd(), uploadPath, outputFileName);
+    const outputPath = path.join(uploadBasePath, outputFileName);
 
     // Use image2 demuxer with pattern
     const inputPattern = path.join(sessionDir, "frame-%06d.jpg");
@@ -123,7 +124,7 @@ export default async function handler(req, res) {
     const stats = fs.statSync(outputPath);
 
     // Save capture record (store relative path)
-    const relativePath = path.relative(process.cwd(), outputPath);
+    const relativePath = path.relative(uploadBasePath, outputPath);
     let capture;
     if (useMongoDB) {
       capture = await CameraCapture.create({
@@ -189,4 +190,3 @@ export default async function handler(req, res) {
     });
   }
 }
-

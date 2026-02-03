@@ -7,6 +7,7 @@ import {
   config,
   isVideoFile,
 } from "../../../lib/upload.js";
+import { getUploadBaseDir } from "../../../lib/upload-path.js";
 import fs from "fs";
 import path from "path";
 
@@ -57,10 +58,9 @@ export default async function handler(req, res) {
       }
 
       // Create session directory
-      const uploadPath = process.env.UPLOAD_PATH || "./uploads";
+      const uploadBasePath = getUploadBaseDir(process.env.UPLOAD_PATH || "./uploads");
       const sessionDir = path.join(
-        process.cwd(),
-        uploadPath,
+        uploadBasePath,
         "sessions",
         sessionId.toString()
       );

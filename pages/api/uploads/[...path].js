@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import { handleCORS } from '../../../lib/api-helpers.js';
+import { getUploadBaseDir } from "../../../lib/upload-path.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,7 +36,7 @@ export default async function handler(req, res) {
     filePath = decodeURIComponent(filePath);
 
     // Construct full path to uploads directory
-    const uploadsDir = path.join(process.cwd(), "uploads");
+    const uploadsDir = getUploadBaseDir(process.env.UPLOAD_PATH || "./uploads");
     const fullPath = path.join(uploadsDir, filePath);
 
     // Security: Ensure the file is within uploads directory
