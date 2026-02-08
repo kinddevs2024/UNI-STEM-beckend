@@ -6,7 +6,7 @@ import ProctoringSession from '../../../../models/ProctoringSession.js';
 import { validateCanStart } from '../../../../lib/anti-cheat-validator.js';
 import { calculateEndTime } from '../../../../lib/timer-service.js';
 import { generateFingerprintHash, getClientIP, detectVM } from '../../../../lib/device-fingerprint.js';
-import { bindDeviceToAttempt } from '../../../../lib/device-locking.js';
+import { bindDeviceToAttempt, validateDeviceFingerprint } from '../../../../lib/device-locking.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 import crypto from 'crypto';
 
@@ -116,6 +116,37 @@ export default async function handler(req, res) {
         code: validation.code,
         ...(validation.attempt && { attempt: validation.attempt }),
         ...(validation.proctoringErrors && { proctoringErrors: validation.proctoringErrors })
+      });
+    }
+
+    // Resume existing attempt if still active
+    if (validation.resume && validation.attempt) {
+      const existingAttempt = validation.attempt;
+      const deviceCheck = validateDeviceFingerprint(existingAttempt, deviceFingerprint);
+      if (!deviceCheck.valid) {
+        return res.status(403).json({
+          success: false,
+          message: deviceCheck.reason || 'Device fingerprint mismatch detected',
+          code: 'DEVICE_FINGERPRINT_MISMATCH'
+        });
+      }
+
+      const startedAt = new Date(existingAttempt.startedAt);
+      const endsAt = new Date(existingAttempt.endsAt);
+      const durationSeconds = Math.max(0, Math.floor((endsAt - startedAt) / 1000));
+
+      return res.json({
+        success: true,
+        resume: true,
+        attempt: {
+          _id: existingAttempt._id,
+          status: existingAttempt.status,
+          startedAt: startedAt.toISOString(),
+          endsAt: endsAt.toISOString(),
+          currentQuestionIndex: existingAttempt.currentQuestionIndex || 0,
+          sessionToken: existingAttempt.sessionToken,
+          durationSeconds
+        }
       });
     }
 
