@@ -9,6 +9,8 @@ import { validateDeviceFingerprint } from '../../../../lib/device-locking.js';
 import { validateAnswerNonce, checkAnswerTimeWindow, rejectReplayedAnswer } from '../../../../lib/replay-protection.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 import { createSubmission } from '../../../../lib/submission-helper.js';
+import { checkRateLimit } from '../../../../lib/rate-limiting.js';
+import { getClientIP } from '../../../../lib/device-fingerprint.js';
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
