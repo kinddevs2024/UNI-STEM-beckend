@@ -3,6 +3,7 @@ import CameraCapture from '../../../../models/CameraCapture.js';
 import { protect } from '../../../../lib/auth.js';
 import { authorize } from '../../../../lib/auth.js';
 import { findUserById } from '../../../../lib/user-helper.js';
+import path from 'path';
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
@@ -26,8 +27,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Allow admin, owner, and school-teacher
-    const roleError = authorize('admin', 'owner', 'school-teacher')(authResult.user);
+    // Allow admin, owner, school-teacher, and resolter
+    const roleError = authorize('admin', 'owner', 'school-teacher', 'resolter')(authResult.user);
     if (roleError) {
       return res.status(roleError.status).json({ 
         success: false,
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
 
     await connectMongoDB();
 
-    const { olympiadId } = req.query;
+    const { olympiadId, userId, captureType, fileType } = req.query;
 
     if (!olympiadId) {
       return res.status(400).json({ 
@@ -51,6 +52,12 @@ export default async function handler(req, res) {
     const skip = (page - 1) * limit;
 
     const filter = { olympiadId };
+    if (userId) {
+      filter.userId = userId;
+    }
+    if (captureType) {
+      filter.captureType = captureType;
+    }
     const total = await CameraCapture.countDocuments(filter);
     const mongoCaptures = await CameraCapture.find(filter)
       .select('_id userId olympiadId imagePath captureType timestamp createdAt')
@@ -61,6 +68,8 @@ export default async function handler(req, res) {
 
     let captures = await Promise.all(mongoCaptures.map(async (capture) => {
       const user = await findUserById(capture.userId);
+      const extension = path.extname(capture.imagePath || '').toLowerCase();
+      const isVideo = [".mp4", ".webm", ".mov", ".avi"].includes(extension);
       return {
         _id: capture._id.toString(),
         olympiadId: capture.olympiadId,
@@ -72,10 +81,15 @@ export default async function handler(req, res) {
         imagePath: capture.imagePath,
         imageUrl: `/api/uploads/${capture.imagePath}`,
         captureType: capture.captureType,
+        fileType: isVideo ? 'video' : 'image',
         timestamp: capture.timestamp,
         createdAt: capture.createdAt,
       };
     }));
+
+    if (fileType) {
+      captures = captures.filter((capture) => capture.fileType === fileType);
+    }
 
     // If school-teacher, filter by school
     if (authResult.user.role === 'school-teacher') {

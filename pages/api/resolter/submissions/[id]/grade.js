@@ -1,5 +1,6 @@
 import { connectDB } from '../../../../../lib/json-db.js';
 import { findOlympiadById } from '../../../../../lib/olympiad-helper.js';
+import { findQuestionsByOlympiadId } from '../../../../../lib/question-helper.js';
 import { findSubmissionById, updateSubmission, findSubmissionsByOlympiadId } from '../../../../../lib/submission-helper.js';
 import { findResultByUserAndOlympiad, updateResult } from '../../../../../lib/result-helper.js';
 import { findSubmissionsByUserAndOlympiad } from '../../../../../lib/submission-helper.js';
@@ -116,22 +117,39 @@ export default async function handler(req, res) {
 
     // Update result
     const result = await findResultByUserAndOlympiad(submission.userId, submission.olympiadId);
-    let resultStatus = 'active';
-    
+    let resultStatus = 'checked';
+    let shouldPublish = true;
+
+    if (aiDetected) {
+      resultStatus = 'blocked';
+      shouldPublish = false;
+    } else {
+      const questions = await findQuestionsByOlympiadId(submission.olympiadId);
+      const essayQuestionIds = new Set(
+        questions.filter((q) => q.type === 'essay').map((q) => q._id)
+      );
+
+      const essaySubmissions = userSubmissions.filter((sub) =>
+        essayQuestionIds.has(sub.questionId)
+      );
+
+      const hasUngradedEssay = essaySubmissions.some((sub) => !sub.gradedAt);
+      if (hasUngradedEssay) {
+        resultStatus = 'pending';
+        shouldPublish = false;
+      }
+    }
+
     if (result) {
       const percentage = olympiad.totalPoints > 0 
         ? (totalScore / olympiad.totalPoints) * 100 
         : 0;
-      
-      // If AI detected, set result status to 'blocked'
-      if (aiDetected) {
-        resultStatus = 'blocked';
-      }
-      
+
       await updateResult(result._id, {
         totalScore: totalScore,
         percentage: Math.round(percentage * 100) / 100,
         status: resultStatus,
+        visible: shouldPublish,
       });
     }
 
@@ -156,6 +174,7 @@ export default async function handler(req, res) {
         totalScore: totalScore,
         percentage: Math.round((olympiad.totalPoints > 0 ? (totalScore / olympiad.totalPoints) * 100 : 0) * 100) / 100,
         status: resultStatus,
+        visible: shouldPublish,
       } : null,
     });
   } catch (error) {

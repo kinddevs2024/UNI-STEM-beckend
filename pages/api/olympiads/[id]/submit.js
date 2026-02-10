@@ -488,6 +488,9 @@ export default async function handler(req, res) {
       ? (totalScore / olympiad.totalPoints) * 100 
       : 0;
 
+    const shouldAutoPublish = olympiad.type === "test";
+    const initialStatus = shouldAutoPublish ? "checked" : "pending";
+
     // Create result
     const result = await createResult({
       userId: userId.toString(),
@@ -496,6 +499,8 @@ export default async function handler(req, res) {
       maxScore: olympiad.totalPoints,
       percentage: Math.round(percentage * 100) / 100,
       completedAt: new Date().toISOString(),
+      status: initialStatus,
+      visible: shouldAutoPublish,
     });
 
     // Delete draft after successful submission
