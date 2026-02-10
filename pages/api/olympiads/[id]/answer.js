@@ -3,12 +3,13 @@ import { findQuestionsByOlympiadId } from '../../../../lib/question-helper.js';
 import { protect } from '../../../../lib/auth.js';
 import connectMongoDB from '../../../../lib/mongodb.js';
 import Attempt from '../../../../models/Attempt.js';
+import Submission from '../../../../models/Submission.js';
 import { validateAnswerSubmission } from '../../../../lib/anti-cheat-validator.js';
 import { validateTimeNotExpired } from '../../../../lib/timer-service.js';
 import { validateDeviceFingerprint } from '../../../../lib/device-locking.js';
 import { validateAnswerNonce, checkAnswerTimeWindow, rejectReplayedAnswer } from '../../../../lib/replay-protection.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
-import { createSubmission } from '../../../../lib/submission-helper.js';
+import { createSubmission, updateSubmission } from '../../../../lib/submission-helper.js';
 import { checkRateLimit } from '../../../../lib/rate-limiting.js';
 import { getClientIP } from '../../../../lib/device-fingerprint.js';
 
@@ -109,22 +110,16 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate answer submission (checks if questionIndex matches currentQuestionIndex)
+    // Validate answer submission (allows previous questions, blocks skipping ahead)
     const validation = validateAnswerSubmission(attempt, questionIdx);
     if (!validation.valid) {
-      // If validation failed because user is resubmitting the current question, allow it
-      // This can happen if frontend sends multiple requests or retries
-      if (validation.code === 'INVALID_QUESTION_INDEX' && validation.questionIndex === attempt.currentQuestionIndex) {
-        // Allow resubmission of current question
-      } else {
-        return res.status(403).json({ 
-          success: false,
-          message: validation.error,
-          code: validation.code,
-          currentQuestionIndex: validation.currentQuestionIndex,
-          questionIndex: validation.questionIndex
-        });
-      }
+      return res.status(403).json({ 
+        success: false,
+        message: validation.error,
+        code: validation.code,
+        currentQuestionIndex: validation.currentQuestionIndex,
+        questionIndex: validation.questionIndex
+      });
     }
 
     // Get questions
@@ -224,13 +219,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if already answered
-    if (attempt.answeredQuestions.includes(question._id)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'This question has already been answered' 
-      });
-    }
+    const hasAnswered = attempt.answeredQuestions.includes(question._id);
 
     // Calculate score (only for test questions, essay scoring handled separately)
     let score = 0;
@@ -245,22 +234,36 @@ export default async function handler(req, res) {
       isCorrect = false;
     }
 
-    // Create submission (using existing helper, which saves to JSON for now)
-    // Note: In production, you might want to also save to MongoDB
-    const submission = createSubmission({
-      userId,
+    // Create or update submission
+    const submissionAnswer = typeof answer === 'string' ? answer : JSON.stringify(answer);
+    const existingSubmission = await Submission.findOne({
+      userId: userId.toString(),
       olympiadId,
-      questionId: question._id,
-      answer: typeof answer === 'string' ? answer : JSON.stringify(answer),
-      score,
-      isCorrect
+      questionId: question._id
     });
 
+    const submission = existingSubmission
+      ? await updateSubmission(existingSubmission._id, {
+          answer: submissionAnswer,
+          score,
+          isCorrect
+        })
+      : await createSubmission({
+          userId,
+          olympiadId,
+          questionId: question._id,
+          answer: submissionAnswer,
+          score,
+          isCorrect
+        });
+
     // Update attempt
-    attempt.answeredQuestions.push(question._id);
+    if (!hasAnswered) {
+      attempt.answeredQuestions.push(question._id);
+    }
     
-    // Auto-advance to next question if not last question
-    if (questionIdx < allQuestions.length - 1) {
+    // Auto-advance only when answering the current question
+    if (questionIdx === attempt.currentQuestionIndex && questionIdx < allQuestions.length - 1) {
       attempt.currentQuestionIndex = questionIdx + 1;
     }
     
@@ -271,7 +274,7 @@ export default async function handler(req, res) {
       attemptId: attempt._id,
       userId,
       olympiadId,
-      eventType: 'answer',
+      eventType: existingSubmission ? 'answer_update' : 'answer',
       metadata: {
         questionIndex: questionIdx,
         questionId: question._id,
