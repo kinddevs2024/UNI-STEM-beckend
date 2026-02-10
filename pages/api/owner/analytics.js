@@ -55,9 +55,21 @@ export default async function handler(req, res) {
       averageScore = sum / results.length;
     }
 
-    const activeOlympiads = olympiads.filter(o => o.status === 'active').length;
-    const upcomingOlympiads = olympiads.filter(o => o.status === 'upcoming').length;
-    const completedOlympiads = olympiads.filter(o => o.status === 'completed').length;
+    const now = new Date();
+    const activeOlympiads = olympiads.filter(o => {
+      if (!o.startTime || !o.endTime) return false;
+      const start = new Date(o.startTime);
+      const end = new Date(o.endTime);
+      return start <= now && end >= now;
+    }).length;
+    const upcomingOlympiads = olympiads.filter(o => {
+      if (!o.startTime) return false;
+      return new Date(o.startTime) > now;
+    }).length;
+    const completedOlympiads = olympiads.filter(o => {
+      if (!o.endTime) return false;
+      return new Date(o.endTime) < now;
+    }).length;
 
     res.json({
       totalUsers,

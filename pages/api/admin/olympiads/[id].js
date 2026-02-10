@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     if (req.method === 'GET') {
-      const olympiad = getOlympiadWithCreator(id);
+      const olympiad = await getOlympiadWithCreator(id);
 
       if (!olympiad) {
         return res.status(404).json({ 
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       // Populate questions if needed
       let questions = [];
       if (olympiad.questions && olympiad.questions.length > 0) {
-        const allQuestions = getAllQuestions();
+        const allQuestions = await getAllQuestions();
         questions = olympiad.questions
           .map(qId => allQuestions.find(q => q._id === qId))
           .filter(q => q !== undefined);
