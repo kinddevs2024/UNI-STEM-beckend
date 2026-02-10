@@ -121,7 +121,14 @@ export default async function handler(req, res) {
 
     // Resume existing attempt if still active
     if (validation.resume && validation.attempt) {
-      const existingAttempt = validation.attempt;
+      const existingAttempt = await Attempt.findById(validation.attempt._id);
+      if (!existingAttempt) {
+        return res.status(404).json({
+          success: false,
+          message: 'Attempt not found',
+          code: 'ATTEMPT_NOT_FOUND'
+        });
+      }
       const deviceCheck = validateDeviceFingerprint(existingAttempt, deviceFingerprint);
       if (!deviceCheck.valid) {
         const answeredCount = existingAttempt.answeredQuestions?.length || 0;
