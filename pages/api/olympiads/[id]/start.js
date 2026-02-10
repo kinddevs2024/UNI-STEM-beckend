@@ -124,11 +124,35 @@ export default async function handler(req, res) {
       const existingAttempt = validation.attempt;
       const deviceCheck = validateDeviceFingerprint(existingAttempt, deviceFingerprint);
       if (!deviceCheck.valid) {
-        return res.status(403).json({
-          success: false,
-          message: deviceCheck.reason || 'Device fingerprint mismatch detected',
-          code: 'DEVICE_FINGERPRINT_MISMATCH'
-        });
+        const answeredCount = existingAttempt.answeredQuestions?.length || 0;
+        const skippedCount = existingAttempt.skippedQuestions?.length || 0;
+        const canRebindFingerprint = answeredCount === 0 && skippedCount === 0;
+
+        if (canRebindFingerprint) {
+          const previousLockedFingerprint = existingAttempt.lockedDeviceFingerprint;
+          const newFingerprintHash = generateFingerprintHash(deviceFingerprint);
+          existingAttempt.deviceFingerprint = newFingerprintHash;
+          bindDeviceToAttempt(existingAttempt, deviceFingerprint);
+          await existingAttempt.save();
+
+          await createAuditLog({
+            attemptId: existingAttempt._id,
+            userId,
+            olympiadId,
+            eventType: 'device_rebind',
+            metadata: {
+              previousFingerprint: previousLockedFingerprint,
+              newFingerprint: newFingerprintHash
+            },
+            req
+          });
+        } else {
+          return res.status(403).json({
+            success: false,
+            message: deviceCheck.reason || 'Device fingerprint mismatch detected',
+            code: 'DEVICE_FINGERPRINT_MISMATCH'
+          });
+        }
       }
 
       const startedAt = new Date(existingAttempt.startedAt);
