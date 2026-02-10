@@ -1,5 +1,6 @@
 import connectMongoDB from '../../../lib/mongodb.js';
 import { findUserByEmail } from '../../../lib/user-helper.js';
+import bcrypt from 'bcryptjs';
 import { generateToken } from '../../../lib/auth.js';
 import { handleCORS } from '../../../middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
@@ -67,13 +68,13 @@ export default async function handler(req, res) {
   try {
     await connectMongoDB();
 
-    const { email } = req.body;
+    const { email, password } = req.body;
 
     // Validate email
-    if (!email) {
+    if (!email || !password) {
       return res.status(400).json({ 
         success: false,
-        message: 'Please provide email' 
+        message: 'Please provide email and password' 
       });
     }
 
@@ -83,6 +84,21 @@ export default async function handler(req, res) {
       return res.status(401).json({ 
         success: false,
         message: 'Invalid credentials' 
+      });
+    }
+
+    if (!user.passwordHash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password is not set for this account'
+      });
+    }
+
+    const passwordOk = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordOk) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
       });
     }
 

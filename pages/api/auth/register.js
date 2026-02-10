@@ -121,10 +121,10 @@ export default async function handler(req, res) {
     } = req.body;
 
     // Validate required fields
-    if (!name || !email) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide name and email',
+        message: 'Please provide name, email, and password',
       });
     }
 

@@ -70,6 +70,11 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 100,
     min: 0
+  },
+  passwordHash: {
+    type: String,
+    trim: true,
+    default: null
   }
 }, {
   timestamps: true
