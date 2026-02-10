@@ -2,6 +2,7 @@ import { connectDB } from '../../../../../lib/json-db.js';
 import { findOlympiadById, updateOlympiad } from '../../../../../lib/olympiad-helper.js';
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
+import { createOwnerAuditLog } from '../../../../../lib/owner-audit-logger.js';
 
 import { handleCORS } from '../../../../../lib/api-helpers.js';
 
@@ -46,10 +47,25 @@ export default async function handler(req, res) {
     }
 
     // Update status to completed
-    const updatedOlympiad = updateOlympiad(olympiadId, { 
+    const updatedOlympiad = await updateOlympiad(olympiadId, { 
       status: 'completed',
       endTime: new Date().toISOString(), // Update actual end time
     });
+
+    if (authResult.user?.role === 'owner') {
+      await createOwnerAuditLog({
+        actorId: authResult.user._id,
+        actorRole: authResult.user.role,
+        action: 'olympiad_finish',
+        targetType: 'olympiad',
+        targetId: olympiadId,
+        message: `Owner finished olympiad ${updatedOlympiad.title}`,
+        metadata: {
+          title: updatedOlympiad.title,
+        },
+        req,
+      });
+    }
 
     return res.json({
       success: true,

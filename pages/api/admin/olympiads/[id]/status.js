@@ -2,6 +2,7 @@ import { connectDB } from '../../../../../lib/json-db.js';
 import { findOlympiadById, updateOlympiad } from '../../../../../lib/olympiad-helper.js';
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
+import { createOwnerAuditLog } from '../../../../../lib/owner-audit-logger.js';
 
 import { handleCORS } from '../../../../../lib/api-helpers.js';
 
@@ -57,7 +58,24 @@ export default async function handler(req, res) {
     }
 
     // Update status
-    const updatedOlympiad = updateOlympiad(olympiadId, { status });
+    const updatedOlympiad = await updateOlympiad(olympiadId, { status });
+
+    if (authResult.user?.role === 'owner') {
+      await createOwnerAuditLog({
+        actorId: authResult.user._id,
+        actorRole: authResult.user.role,
+        action: 'olympiad_status_change',
+        targetType: 'olympiad',
+        targetId: olympiadId,
+        message: `Owner changed olympiad status to ${status}`,
+        metadata: {
+          title: olympiad.title,
+          previousStatus: olympiad.status,
+          newStatus: status,
+        },
+        req,
+      });
+    }
 
     return res.json({
       success: true,

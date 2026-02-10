@@ -2,6 +2,7 @@ import { connectDB } from '../../../lib/json-db.js';
 import * as olympiadHelperModule from '../../../lib/olympiad-helper.js';
 import { protect } from '../../../lib/auth.js';
 import { authorize } from '../../../lib/auth.js';
+import { createOwnerAuditLog } from '../../../lib/owner-audit-logger.js';
 
 import { handleCORS } from '../../../lib/api-helpers.js';
 
@@ -133,6 +134,23 @@ export default async function handler(req, res) {
         createdBy: authResult.user._id,
       });
 
+      if (authResult.user?.role === 'owner') {
+        await createOwnerAuditLog({
+          actorId: authResult.user._id,
+          actorRole: authResult.user.role,
+          action: 'olympiad_create',
+          targetType: 'olympiad',
+          targetId: olympiad._id,
+          message: `Owner created olympiad ${olympiad.title}`,
+          metadata: {
+            title: olympiad.title,
+            subject: olympiad.subject,
+            type: olympiad.type,
+          },
+          req,
+        });
+      }
+
       return res.status(201).json({
         _id: olympiad._id,
         title: olympiad.title,
@@ -149,6 +167,11 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const page = parseInt(req.query.page) || 1;
       const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+      const search = (req.query.search || '').toLowerCase().trim();
+      const statusFilter = (req.query.status || '').toLowerCase().trim();
+      const subjectFilter = (req.query.subject || '').toLowerCase().trim();
+      const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+      const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
       const skip = (page - 1) * limit;
 
       const rawOlympiads = await olympiadHelper.getAllOlympiadsWithCreators();
@@ -157,6 +180,22 @@ export default async function handler(req, res) {
         : (Array.isArray(rawOlympiads?.data) ? rawOlympiads.data : []);
 
       const allOlympiads = [...olympiadList]
+        .filter(olympiad => {
+          if (statusFilter && olympiad.status !== statusFilter) return false;
+          if (subjectFilter && (olympiad.subject || '').toLowerCase() !== subjectFilter) return false;
+          if (search) {
+            const title = (olympiad.title || '').toLowerCase();
+            const subject = (olympiad.subject || '').toLowerCase();
+            if (!title.includes(search) && !subject.includes(search)) return false;
+          }
+          if (startDate || endDate) {
+            const createdAt = olympiad.createdAt ? new Date(olympiad.createdAt) : null;
+            if (!createdAt) return false;
+            if (startDate && createdAt < startDate) return false;
+            if (endDate && createdAt > endDate) return false;
+          }
+          return true;
+        })
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .map(olympiad => ({
           _id: olympiad._id,

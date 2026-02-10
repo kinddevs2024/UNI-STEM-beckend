@@ -1,9 +1,15 @@
-import { connectDB } from '../../../lib/json-db.js';
-import { getAllUsers } from '../../../lib/user-helper.js';
-import { protect } from '../../../lib/auth.js';
-import { authorize } from '../../../lib/auth.js';
+import { protect } from '../../../../lib/auth.js';
+import { authorize } from '../../../../lib/auth.js';
+import { getAllUsers } from '../../../../lib/user-helper.js';
+import { handleCORS } from '../../../../lib/api-helpers.js';
+import { sendCsv } from '../../../../lib/csv-helpers.js';
 
-import { handleCORS } from '../../../lib/api-helpers.js';
+const formatDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString();
+};
 
 export default async function handler(req, res) {
   if (handleCORS(req, res)) return;
@@ -14,31 +20,26 @@ export default async function handler(req, res) {
   try {
     const authResult = await protect(req);
     if (authResult.error) {
-      return res.status(authResult.status).json({ 
+      return res.status(authResult.status).json({
         success: false,
-        message: authResult.error 
+        message: authResult.error,
       });
     }
 
-    const roleError = authorize('admin', 'owner')(authResult.user);
+    const roleError = authorize('owner')(authResult.user);
     if (roleError) {
-      return res.status(roleError.status).json({ 
+      return res.status(roleError.status).json({
         success: false,
-        message: roleError.error 
+        message: roleError.error,
       });
     }
 
-    await connectDB();
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
     const search = (req.query.search || '').toLowerCase().trim();
     const roleFilter = (req.query.role || '').toLowerCase().trim();
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
     const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
-    const skip = (page - 1) * limit;
 
-    let allUsers = [...await getAllUsers()]
+    const users = [...await getAllUsers()]
       .filter(user => {
         if (roleFilter && user.role !== roleFilter) return false;
         if (search) {
@@ -54,33 +55,24 @@ export default async function handler(req, res) {
         }
         return true;
       })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .map(user => ({
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        createdAt: user.createdAt,
-      }));
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    const total = allUsers.length;
-    const users = allUsers.slice(skip, skip + limit);
+    const headers = ['Id', 'Name', 'Email', 'Role', 'CreatedAt'];
+    const rows = users.map(user => ([
+      user._id,
+      user.name || '',
+      user.email || '',
+      user.role || '',
+      formatDate(user.createdAt),
+    ]));
 
-    res.json({
-      success: true,
-      data: users,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
+    const filename = `owner-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    return sendCsv(res, filename, headers, rows);
   } catch (error) {
-    console.error('Admin users error:', error);
-    res.status(500).json({ 
+    console.error('Owner users export error:', error);
+    res.status(500).json({
       success: false,
-      message: "Error retrieving users"
+      message: 'Error exporting users',
     });
   }
 }

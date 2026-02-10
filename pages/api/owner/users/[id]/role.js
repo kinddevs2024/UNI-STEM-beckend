@@ -2,6 +2,7 @@ import { connectDB } from '../../../../../lib/json-db.js';
 import { findUserById, updateUser } from '../../../../../lib/user-helper.js';
 import { protect } from '../../../../../lib/auth.js';
 import { authorize } from '../../../../../lib/auth.js';
+import { createOwnerAuditLog } from '../../../../../lib/owner-audit-logger.js';
 
 import { handleCORS } from '../../../../../lib/api-helpers.js';
 
@@ -47,8 +48,26 @@ export default async function handler(req, res) {
       });
     }
 
+    const previousRole = user.role;
+
     // Update user role (only owner can do this)
-    const updatedUser = updateUser(id, { role });
+    const updatedUser = await updateUser(id, { role });
+
+    await createOwnerAuditLog({
+      actorId: authResult.user._id,
+      actorRole: authResult.user.role,
+      action: 'user_role_change',
+      targetType: 'user',
+      targetId: id,
+      message: `Owner changed role from ${previousRole} to ${role}`,
+      metadata: {
+        previousRole,
+        newRole: role,
+        targetEmail: user.email,
+        targetName: user.name,
+      },
+      req,
+    });
 
     res.json({
       success: true,

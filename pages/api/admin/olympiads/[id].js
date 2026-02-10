@@ -8,6 +8,7 @@ import {
 import { getAllQuestions } from '../../../../lib/question-helper.js';
 import { protect } from '../../../../lib/auth.js';
 import { authorize } from '../../../../lib/auth.js';
+import { createOwnerAuditLog } from '../../../../lib/owner-audit-logger.js';
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
@@ -79,12 +80,28 @@ export default async function handler(req, res) {
       if (duration) updateData.duration = duration;
       if (status) updateData.status = status;
 
-      const olympiad = updateOlympiad(id, updateData);
+      const olympiad = await updateOlympiad(id, updateData);
 
       if (!olympiad) {
         return res.status(404).json({ 
           success: false,
           message: 'Olympiad not found' 
+        });
+      }
+
+      if (authResult.user?.role === 'owner') {
+        await createOwnerAuditLog({
+          actorId: authResult.user._id,
+          actorRole: authResult.user.role,
+          action: 'olympiad_update',
+          targetType: 'olympiad',
+          targetId: id,
+          message: `Owner updated olympiad ${olympiad.title}`,
+          metadata: {
+            title: olympiad.title,
+            updates: updateData,
+          },
+          req,
         });
       }
 
@@ -112,7 +129,22 @@ export default async function handler(req, res) {
         });
       }
 
-      deleteOlympiad(id);
+      await deleteOlympiad(id);
+
+      if (authResult.user?.role === 'owner') {
+        await createOwnerAuditLog({
+          actorId: authResult.user._id,
+          actorRole: authResult.user.role,
+          action: 'olympiad_delete',
+          targetType: 'olympiad',
+          targetId: id,
+          message: `Owner deleted olympiad ${olympiad.title}`,
+          metadata: {
+            title: olympiad.title,
+          },
+          req,
+        });
+      }
 
       return res.json({
         success: true,
