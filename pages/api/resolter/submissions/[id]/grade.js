@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     }
 
     // Find submission
-    const submission = findSubmissionById(submissionId);
+    const submission = await findSubmissionById(submissionId);
     if (!submission) {
       return res.status(404).json({ 
         success: false,
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     // Check if this is an essay submission
     if (submission.answer && submission.answer.length > 50) {
       // Get other submissions for comparison
-      const otherSubmissions = findSubmissionsByOlympiadId(submission.olympiadId)
+      const otherSubmissions = (await findSubmissionsByOlympiadId(submission.olympiadId))
         .filter(s => s._id !== submissionId && s.userId !== submission.userId);
       
       // Analyze text for AI detection
