@@ -119,6 +119,106 @@ export default async function handler(req, res) {
       });
     }
 
+    // Restart existing attempt if eligible (empty attempt that failed verification)
+    if (validation.restart && validation.attempt) {
+      const existingAttempt = await Attempt.findById(validation.attempt._id);
+      if (!existingAttempt) {
+        return res.status(404).json({
+          success: false,
+          message: 'Attempt not found',
+          code: 'ATTEMPT_NOT_FOUND'
+        });
+      }
+
+      const fingerprintHash = generateFingerprintHash(deviceFingerprint);
+      const ipAddress = getClientIP(req);
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      const startedAt = new Date();
+      const durationSeconds = olympiad.duration || 3600; // Default 1 hour
+      const endsAt = calculateEndTime(startedAt, durationSeconds);
+
+      existingAttempt.status = 'started';
+      existingAttempt.startedAt = startedAt;
+      existingAttempt.endsAt = endsAt;
+      existingAttempt.currentQuestionIndex = 0;
+      existingAttempt.answeredQuestions = [];
+      existingAttempt.skippedQuestions = [];
+      existingAttempt.deviceFingerprint = fingerprintHash;
+      existingAttempt.ipAddress = ipAddress;
+      existingAttempt.sessionToken = sessionToken;
+      existingAttempt.violations = [];
+      existingAttempt.deviceSwitchDetected = false;
+      existingAttempt.deviceSwitchTimestamp = null;
+      existingAttempt.missedHeartbeats = 0;
+      existingAttempt.lastHeartbeatAt = null;
+      existingAttempt.trustScore = null;
+      existingAttempt.trustClassification = null;
+      existingAttempt.scoringBreakdown = null;
+      existingAttempt.verificationStatus = 'pending';
+      existingAttempt.verificationResults = null;
+      existingAttempt.submittedAt = null;
+      existingAttempt.completedAt = null;
+      existingAttempt.questionNonces = {};
+      existingAttempt.invalidatedAt = null;
+      existingAttempt.invalidatedBy = null;
+      existingAttempt.invalidationReason = null;
+      existingAttempt.adminSubmitted = false;
+      existingAttempt.proctoringStatus = {
+        frontCameraActive: proctoringStatus.frontCameraActive || false,
+        backCameraActive: proctoringStatus.backCameraActive || false,
+        screenShareActive: proctoringStatus.screenShareActive || false,
+        displaySurface: proctoringStatus.displaySurface || null,
+        lastValidated: new Date()
+      };
+
+      bindDeviceToAttempt(existingAttempt, deviceFingerprint);
+      await existingAttempt.save();
+
+      const proctoringSession = await ProctoringSession.findOne({ attemptId: existingAttempt._id });
+      if (proctoringSession) {
+        proctoringSession.status = 'active';
+        proctoringSession.screenshots = [];
+        proctoringSession.violations = [];
+        await proctoringSession.save();
+      } else {
+        const newSession = new ProctoringSession({
+          attemptId: existingAttempt._id,
+          userId,
+          olympiadId,
+          status: 'active',
+          screenshots: [],
+          violations: []
+        });
+        await newSession.save();
+      }
+
+      await createAuditLog({
+        attemptId: existingAttempt._id,
+        userId,
+        olympiadId,
+        eventType: 'restart',
+        metadata: {
+          deviceFingerprint: fingerprintHash,
+          proctoringStatus: existingAttempt.proctoringStatus
+        },
+        req
+      });
+
+      return res.json({
+        success: true,
+        restart: true,
+        attempt: {
+          _id: existingAttempt._id,
+          status: existingAttempt.status,
+          startedAt: existingAttempt.startedAt.toISOString(),
+          endsAt: existingAttempt.endsAt.toISOString(),
+          currentQuestionIndex: existingAttempt.currentQuestionIndex,
+          sessionToken: existingAttempt.sessionToken,
+          durationSeconds
+        }
+      });
+    }
+
     // Resume existing attempt if still active
     if (validation.resume && validation.attempt) {
       const existingAttempt = await Attempt.findById(validation.attempt._id);
