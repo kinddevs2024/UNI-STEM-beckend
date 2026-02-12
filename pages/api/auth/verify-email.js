@@ -13,9 +13,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, token } = req.body || {};
+    const { email, token: verifyToken } = req.body || {};
 
-    if (!email || !token) {
+    if (!email || !verifyToken) {
       return res.status(400).json({
         success: false,
         message: "Email and token are required",
@@ -33,12 +33,12 @@ export default async function handler(req, res) {
     }
 
     if (user.emailVerified) {
-      const token = generateToken(user._id.toString());
+      const authToken = generateToken(user._id.toString());
       const safeUser = await findUserByIdWithoutPassword(user._id.toString());
       return res.json({
         success: true,
         message: "Email is already verified",
-        token,
+        token: authToken,
         user: safeUser,
       });
     }
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
     const tokenHash = crypto
       .createHash("sha256")
-      .update(token)
+      .update(verifyToken)
       .digest("hex");
 
     if (tokenHash !== user.emailVerificationTokenHash) {
@@ -77,13 +77,13 @@ export default async function handler(req, res) {
     user.emailVerificationExpires = null;
     await user.save();
 
-    const token = generateToken(user._id.toString());
+    const authToken = generateToken(user._id.toString());
     const safeUser = await findUserByIdWithoutPassword(user._id.toString());
 
     res.json({
       success: true,
       message: "Email has been verified successfully",
-      token,
+      token: authToken,
       user: safeUser,
     });
   } catch (error) {
