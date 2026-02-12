@@ -2,6 +2,8 @@ import crypto from "crypto";
 import connectMongoDB from "../../../lib/mongodb.js";
 import { handleCORS } from "../../../lib/middleware/cors.js";
 import User from "../../../models/User.js";
+import { generateToken } from "../../../lib/auth.js";
+import { findUserByIdWithoutPassword } from "../../../lib/user-helper.js";
 
 export default async function handler(req, res) {
   if (handleCORS(req, res)) return;
@@ -31,9 +33,13 @@ export default async function handler(req, res) {
     }
 
     if (user.emailVerified) {
+      const token = generateToken(user._id.toString());
+      const safeUser = await findUserByIdWithoutPassword(user._id.toString());
       return res.json({
         success: true,
         message: "Email is already verified",
+        token,
+        user: safeUser,
       });
     }
 
@@ -71,9 +77,14 @@ export default async function handler(req, res) {
     user.emailVerificationExpires = null;
     await user.save();
 
+    const token = generateToken(user._id.toString());
+    const safeUser = await findUserByIdWithoutPassword(user._id.toString());
+
     res.json({
       success: true,
       message: "Email has been verified successfully",
+      token,
+      user: safeUser,
     });
   } catch (error) {
     console.error("Verify email error:", error);
