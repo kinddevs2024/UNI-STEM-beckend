@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Ensure MongoDB indexes exist for Attempt, Submission, Portfolio, Olympiad, SessionHeartbeat.
+ * Ensure MongoDB indexes exist for Attempt, Submission, Olympiad, SessionHeartbeat.
  * Run once after deployment: node scripts/ensure-indexes.js
  */
 
@@ -25,11 +25,10 @@ async function ensureIndexes() {
     // Load models so their indexes are registered
     const Attempt = (await import('../models/Attempt.js')).default;
     const Submission = (await import('../models/Submission.js')).default;
-    const Portfolio = (await import('../models/Portfolio.js')).default;
     const Olympiad = (await import('../models/Olympiad.js')).default;
     const SessionHeartbeat = (await import('../models/SessionHeartbeat.js')).default;
 
-    const models = [Attempt, Submission, Portfolio, Olympiad, SessionHeartbeat];
+    const models = [Attempt, Submission, Olympiad, SessionHeartbeat];
     for (const model of models) {
       if (model.syncIndexes) {
         console.log(`Syncing indexes for ${model.modelName}...`);
