@@ -1,6 +1,6 @@
 import { handleCORS } from "../../../lib/api-helpers.js";
 import { protect } from "../../../lib/auth.js";
-import { requireStudentRole } from "../../../middleware/portfolio-access.js";
+import { requireStudentRole } from "../../../lib/middleware/portfolio-access.js";
 import {
   createPortfolio,
   slugExists,

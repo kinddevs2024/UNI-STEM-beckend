@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import connectDB from '../../../lib/mongodb.js';
 import { createUser, findUserByEmail } from '../../../lib/user-helper.js';
 import { generateToken } from '../../../lib/auth.js';
-import { handleCORS } from '../../../middleware/cors.js';
+import { handleCORS } from '../../../lib/middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 import path from 'path';
 import { fileURLToPath } from 'url';

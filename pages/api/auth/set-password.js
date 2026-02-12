@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import connectMongoDB from "../../../lib/mongodb.js";
-import { handleCORS } from "../../../middleware/cors.js";
+import { handleCORS } from "../../../lib/middleware/cors.js";
 import User from "../../../models/User.js";
 
 export default async function handler(req, res) {
