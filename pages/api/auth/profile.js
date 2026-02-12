@@ -1,7 +1,7 @@
 import { connectDB } from '../../../lib/json-db.js';
 import { findUserById, updateUser, findUserByEmail } from '../../../lib/user-helper.js';
 import { protect } from '../../../lib/auth.js';
-import { handleCORS } from '../../../middleware/cors.js';
+import { handleCORS } from '../../../lib/middleware/cors.js';
 
 /**
  * Update user profile

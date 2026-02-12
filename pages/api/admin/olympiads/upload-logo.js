@@ -5,7 +5,7 @@ import {
 } from "../../../../lib/olympiad-helper.js";
 import { protect } from "../../../../lib/auth.js";
 import { authorize } from "../../../../lib/auth.js";
-import { handleCORS } from "../../../../middleware/cors.js";
+import { handleCORS } from "../../../../lib/middleware/cors.js";
 import { parseForm, saveFile, config } from "../../../../lib/upload.js";
 import { getUploadBaseDir } from "../../../../lib/upload-path.js";
 import fs from "fs";

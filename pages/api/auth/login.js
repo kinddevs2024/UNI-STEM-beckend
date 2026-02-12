@@ -2,7 +2,7 @@ import connectMongoDB from '../../../lib/mongodb.js';
 import { findUserByEmail } from '../../../lib/user-helper.js';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../../../lib/auth.js';
-import { handleCORS } from '../../../middleware/cors.js';
+import { handleCORS } from '../../../lib/middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 import crypto from 'crypto';
 import User from '../../../models/User.js';

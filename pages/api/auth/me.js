@@ -1,5 +1,5 @@
 import { protect } from '../../../lib/auth.js';
-import { handleCORS } from '../../../middleware/cors.js';
+import { handleCORS } from '../../../lib/middleware/cors.js';
 
 /**
  * @swagger
