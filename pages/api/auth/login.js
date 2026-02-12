@@ -6,7 +6,13 @@ import { handleCORS } from '../../../lib/middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 import crypto from 'crypto';
 import User from '../../../models/User.js';
-import { sendPasswordSetupEmail } from '../../../lib/email.js';
+import { sendPasswordSetupEmail, sendEmailVerification } from '../../../lib/email.js';
+import {
+  VERIFY_EMAIL_PATH,
+  EMAIL_VERIFY_TTL_HOURS,
+  RESET_PASSWORD_PATH,
+  PASSWORD_RESET_TTL_HOURS,
+} from '../../../lib/email-constants.js';
 
 /**
  * @swagger
@@ -93,7 +99,7 @@ export default async function handler(req, res) {
     if (!user.passwordHash) {
       const resetTtlHours = process.env.PASSWORD_RESET_TTL_HOURS
         ? Number(process.env.PASSWORD_RESET_TTL_HOURS)
-        : 6;
+        : PASSWORD_RESET_TTL_HOURS;
 
       const rawToken = crypto.randomBytes(24).toString('hex');
       const tokenHash = crypto
@@ -108,7 +114,7 @@ export default async function handler(req, res) {
         await userDoc.save();
 
         const frontendBase = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
-        const resetPath = process.env.RESET_PASSWORD_PATH || '/updatepassword';
+        const resetPath = process.env.RESET_PASSWORD_PATH || RESET_PASSWORD_PATH;
         const resetUrl = new URL(resetPath, frontendBase);
         resetUrl.searchParams.set('email', user.email);
         resetUrl.searchParams.set('token', rawToken);
@@ -143,6 +149,49 @@ export default async function handler(req, res) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
+      });
+    }
+
+    if (user.emailVerified === false) {
+      const verifyTtlHours = process.env.EMAIL_VERIFY_TTL_HOURS
+        ? Number(process.env.EMAIL_VERIFY_TTL_HOURS)
+        : EMAIL_VERIFY_TTL_HOURS;
+
+      const rawToken = crypto.randomBytes(24).toString('hex');
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(rawToken)
+        .digest('hex');
+
+      const userDoc = await User.findById(user._id);
+      if (userDoc) {
+        userDoc.emailVerificationTokenHash = tokenHash;
+        userDoc.emailVerificationExpires = new Date(
+          Date.now() + verifyTtlHours * 60 * 60 * 1000
+        );
+        await userDoc.save();
+
+        const frontendBase = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
+        const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
+        const verifyUrl = new URL(verifyPath, frontendBase);
+        verifyUrl.searchParams.set('email', user.email);
+        verifyUrl.searchParams.set('token', rawToken);
+
+        try {
+          await sendEmailVerification({
+            to: user.email,
+            name: user.name,
+            link: verifyUrl.toString(),
+          });
+        } catch (emailError) {
+          console.error('Email verification send error:', emailError);
+        }
+      }
+
+      return res.status(401).json({
+        success: false,
+        message: 'Email is not verified. We sent a verification link to your email.',
+        emailVerificationRequired: true,
       });
     }
 

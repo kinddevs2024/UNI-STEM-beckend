@@ -1,11 +1,14 @@
 import dotenv from 'dotenv';
 import connectDB from '../../../lib/mongodb.js';
 import { createUser, findUserByEmail } from '../../../lib/user-helper.js';
-import { generateToken } from '../../../lib/auth.js';
 import { handleCORS } from '../../../lib/middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
+import User from '../../../models/User.js';
+import { sendEmailVerification } from '../../../lib/email.js';
+import { VERIFY_EMAIL_PATH, EMAIL_VERIFY_TTL_HOURS } from '../../../lib/email-constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -182,10 +185,56 @@ export default async function handler(req, res) {
       userLogo,
     });
 
-    const token = generateToken(user._id.toString());
+    const verifyTtlHours = process.env.EMAIL_VERIFY_TTL_HOURS
+      ? Number(process.env.EMAIL_VERIFY_TTL_HOURS)
+      : EMAIL_VERIFY_TTL_HOURS;
+
+    const rawToken = crypto.randomBytes(24).toString('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
+
+    const userDoc = await User.findById(user._id);
+    if (!userDoc) {
+      return res.status(500).json({
+        success: false,
+        message: 'Registration failed. Please try again.',
+      });
+    }
+
+    userDoc.emailVerified = false;
+    userDoc.emailVerificationTokenHash = tokenHash;
+    userDoc.emailVerificationExpires = new Date(
+      Date.now() + verifyTtlHours * 60 * 60 * 1000
+    );
+    await userDoc.save();
+
+    const frontendBase = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
+    const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
+    const verifyUrl = new URL(verifyPath, frontendBase);
+    verifyUrl.searchParams.set('email', user.email);
+    verifyUrl.searchParams.set('token', rawToken);
+
+    try {
+      await sendEmailVerification({
+        to: user.email,
+        name: user.name,
+        link: verifyUrl.toString(),
+      });
+    } catch (emailError) {
+      console.error('Email verification send error:', emailError);
+      await User.deleteOne({ _id: user._id });
+      return res.status(500).json({
+        success: false,
+        message: 'Registration failed. Email could not be sent.',
+      });
+    }
 
     res.status(201).json({
-      token,
+      success: true,
+      emailVerificationRequired: true,
+      message: 'We sent a verification link to your email.',
       user: {
         _id: user._id,
         email: user.email,

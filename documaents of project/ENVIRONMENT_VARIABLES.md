@@ -237,6 +237,28 @@ C:\uploads
 
 ---
 
+#### `VERIFY_EMAIL_PATH`
+
+**Description**: Frontend path for email verification UI  
+**Required**: NO  
+**Format**: URL path  
+**Example**: `/verify-email`  
+**Default**: `/verify-email`  
+**Location**: Used in `pages/api/auth/register.js`, `pages/api/auth/login.js`
+
+---
+
+#### `EMAIL_VERIFY_TTL_HOURS`
+
+**Description**: Email verification link TTL in hours  
+**Required**: NO  
+**Type**: Integer  
+**Example**: `24`  
+**Default**: `24`  
+**Location**: Used in `pages/api/auth/register.js`, `pages/api/auth/login.js`
+
+---
+
 #### `PASSWORD_RESET_TTL_HOURS`
 
 **Description**: Password setup link TTL in hours  
