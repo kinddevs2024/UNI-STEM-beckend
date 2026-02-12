@@ -171,6 +171,83 @@ C:\uploads
 
 ---
 
+#### `SMTP_HOST`
+
+**Description**: SMTP server host for email sending  
+**Required**: YES (for password setup emails)  
+**Format**: Hostname  
+**Example**: `smtp.gmail.com`  
+**Default**: None  
+**Location**: Used in `lib/email.js`
+
+---
+
+#### `SMTP_PORT`
+
+**Description**: SMTP server port  
+**Required**: YES (for password setup emails)  
+**Type**: Integer  
+**Example**: `587` (STARTTLS), `465` (SSL)  
+**Default**: `587`  
+**Location**: Used in `lib/email.js`
+
+---
+
+#### `SMTP_USER`
+
+**Description**: SMTP username/login  
+**Required**: YES (for password setup emails)  
+**Format**: String  
+**Example**: `no-reply@unistem.example.com`  
+**Default**: None  
+**Location**: Used in `lib/email.js`
+
+---
+
+#### `SMTP_PASS`
+
+**Description**: SMTP password (or app password)  
+**Required**: YES (for password setup emails)  
+**Format**: String  
+**Example**: `app-password-or-smtp-password`  
+**Default**: None  
+**Location**: Used in `lib/email.js`
+
+---
+
+#### `SMTP_FROM`
+
+**Description**: From address for outgoing emails  
+**Required**: YES (for password setup emails)  
+**Format**: Email address  
+**Example**: `"UNI STEM" <no-reply@unistem.example.com>`  
+**Default**: Falls back to `SMTP_USER`  
+**Location**: Used in `lib/email.js`
+
+---
+
+#### `RESET_PASSWORD_PATH`
+
+**Description**: Frontend path for password setup UI  
+**Required**: NO  
+**Format**: URL path  
+**Example**: `/updatepassword`  
+**Default**: `/updatepassword`  
+**Location**: Used in `pages/api/auth/login.js`
+
+---
+
+#### `PASSWORD_RESET_TTL_HOURS`
+
+**Description**: Password setup link TTL in hours  
+**Required**: NO  
+**Type**: Integer  
+**Example**: `6`  
+**Default**: `6`  
+**Location**: Used in `pages/api/auth/login.js`
+
+---
+
 #### `GOOGLE_CLIENT_SECRET`
 
 **Description**: Google OAuth 2.0 client secret  

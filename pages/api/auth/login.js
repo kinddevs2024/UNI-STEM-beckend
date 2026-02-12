@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '../../../lib/auth.js';
 import { handleCORS } from '../../../middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
+import crypto from 'crypto';
+import User from '../../../models/User.js';
+import { sendPasswordSetupEmail } from '../../../lib/email.js';
 
 /**
  * @swagger
@@ -71,10 +74,10 @@ export default async function handler(req, res) {
     const { email, password } = req.body;
 
     // Validate email
-    if (!email || !password) {
+    if (!email) {
       return res.status(400).json({ 
         success: false,
-        message: 'Please provide email and password' 
+        message: 'Please provide email'
       });
     }
 
@@ -88,9 +91,50 @@ export default async function handler(req, res) {
     }
 
     if (!user.passwordHash) {
+      const resetTtlHours = process.env.PASSWORD_RESET_TTL_HOURS
+        ? Number(process.env.PASSWORD_RESET_TTL_HOURS)
+        : 6;
+
+      const rawToken = crypto.randomBytes(24).toString('hex');
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(rawToken)
+        .digest('hex');
+
+      const userDoc = await User.findById(user._id);
+      if (userDoc) {
+        userDoc.passwordResetTokenHash = tokenHash;
+        userDoc.passwordResetExpires = new Date(Date.now() + resetTtlHours * 60 * 60 * 1000);
+        await userDoc.save();
+
+        const frontendBase = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
+        const resetPath = process.env.RESET_PASSWORD_PATH || '/updatepassword';
+        const resetUrl = new URL(resetPath, frontendBase);
+        resetUrl.searchParams.set('email', user.email);
+        resetUrl.searchParams.set('token', rawToken);
+
+        try {
+          await sendPasswordSetupEmail({
+            to: user.email,
+            name: user.name,
+            link: resetUrl.toString(),
+          });
+        } catch (emailError) {
+          console.error('Password setup email error:', emailError);
+        }
+      }
+
       return res.status(401).json({
         success: false,
-        message: 'Password is not set for this account'
+        message: 'Password is not set for this account. We sent a setup link to your email.',
+        passwordResetRequired: true
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide password'
       });
     }
 
