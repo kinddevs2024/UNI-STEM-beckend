@@ -22,9 +22,11 @@
    - Example: `mongodb+srv://global-olympiad:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority`
 
 6. **Update `.env`** in `UNI-STEM-beckend`:
+
    ```
    MONGODB_URI=mongodb+srv://global-olympiad:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/global-olympiad?retryWrites=true&w=majority
    ```
+
    (Add `/global-olympiad` before `?` for database name)
 
 7. **Restart backend:** Stop (`Ctrl+C`) and run `npm run dev` again

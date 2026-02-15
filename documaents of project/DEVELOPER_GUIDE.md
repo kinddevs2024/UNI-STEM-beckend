@@ -19,12 +19,14 @@ Welcome to Global Olympiad! This guide will help you get started as a new develo
 1. **Clone the repository** (if applicable)
 
 2. **Install Backend Dependencies**:
+
    ```bash
    cd UNI-STEM-beckend
    npm install
    ```
 
 3. **Install Frontend Dependencies**:
+
    ```bash
    cd UNI-STEM-Front
    npm install
@@ -36,6 +38,7 @@ Welcome to Global Olympiad! This guide will help you get started as a new develo
    - See [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) for details
 
 5. **Start MongoDB** (if using local MongoDB):
+
    ```bash
    # Windows
    net start MongoDB
@@ -45,17 +48,21 @@ Welcome to Global Olympiad! This guide will help you get started as a new develo
    ```
 
 6. **Start Backend**:
+
    ```bash
    cd UNI-STEM-beckend
    npm run dev
    ```
+
    Backend runs on `http://localhost:3000`
 
 7. **Start Frontend**:
+
    ```bash
    cd UNI-STEM-Front
    npm run dev
    ```
+
    Frontend runs on `http://localhost:5173`
 
 8. **Open Browser**:
@@ -134,6 +141,7 @@ src/
 ### Frontend Architecture
 
 **Technology Stack**:
+
 - **React 18.2.0** - UI library
 - **Vite 7.2.6** - Build tool and dev server
 - **React Router 6.20.0** - Client-side routing
@@ -142,6 +150,7 @@ src/
 - **Socket.io Client 4.5.4** - Real-time communication
 
 **Key Patterns**:
+
 - **Context API**: State management (Auth, Socket, Theme)
 - **Protected Routes**: Route-level authentication
 - **API Service Layer**: Centralized API calls
@@ -150,6 +159,7 @@ src/
 ### Backend Architecture
 
 **Technology Stack**:
+
 - **Next.js 14.0.4** - Framework (API Routes only)
 - **Node.js 18+** - Runtime
 - **MongoDB + Mongoose 8.0.3** - Database
@@ -157,6 +167,7 @@ src/
 - **JWT** - Authentication
 
 **Key Patterns**:
+
 - **API Routes**: RESTful endpoints in `pages/api/`
 - **Mongoose Models**: Database schema definitions
 - **Middleware**: Authentication and CORS handling
@@ -179,6 +190,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Role-Based Access Control
 
 **User Roles**:
+
 - **student** - Can participate in olympiads
 - **admin** - Can manage olympiads and questions
 - **owner** - Full platform access
@@ -188,6 +200,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 - **school-teacher** - Teacher-specific access
 
 **Access Control**:
+
 - Frontend: `ProtectedRoute` component checks authentication
 - Backend: Middleware checks roles in JWT token
 - API endpoints verify roles before allowing access
@@ -195,12 +208,14 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Portfolio System
 
 **Key Concepts**:
+
 - **Multi-page portfolios** - Portfolios have multiple sections/pages
 - **Theme system** - Light/dark themes with customizable container width
 - **Public/Private** - Portfolios can be public (viewable without auth) or private
 - **Verification** - Universities can verify portfolios
 
 **Data Flow**:
+
 1. User creates portfolio in `PortfolioConstructor`
 2. Portfolio saved via `portfolioAPI.js`
 3. Backend stores in MongoDB with `isPublic`/`visibility` flags
@@ -210,10 +225,12 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Olympiad System
 
 **Olympiad Types**:
+
 - **Test** - Multiple choice questions
 - **Essay** - Text-based answers
 
 **Flow**:
+
 1. Admin creates olympiad and questions
 2. Olympiad published and becomes available to students
 3. Student starts olympiad (timer begins)
@@ -229,6 +246,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Making Changes
 
 1. **Create a feature branch**:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -244,6 +262,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
    - Check for console errors
 
 4. **Commit your changes**:
+
    ```bash
    git add .
    git commit -m "Description of changes"
@@ -252,6 +271,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Code Style Guidelines
 
 **JavaScript/React**:
+
 - Use ES6+ features (arrow functions, destructuring, etc.)
 - Use functional components with hooks
 - Keep components small and focused
@@ -259,12 +279,14 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 - Add PropTypes or TypeScript types (if applicable)
 
 **CSS**:
+
 - Use design tokens from `design-tokens.css`
 - Follow BEM naming convention (if applicable)
 - Keep styles modular and component-scoped
 - Use CSS variables for theming
 
 **API/Backend**:
+
 - Follow RESTful conventions
 - Return consistent response formats
 - Handle errors gracefully
@@ -274,12 +296,14 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Testing Your Changes
 
 **Frontend Testing**:
+
 - Test in multiple browsers (Chrome, Firefox, Safari, Edge)
 - Test responsive design (mobile, tablet, desktop)
 - Test with different user roles
 - Check console for errors/warnings
 
 **Backend Testing**:
+
 - Test API endpoints with Postman/curl
 - Verify database operations
 - Test error cases (invalid input, missing auth, etc.)
@@ -292,22 +316,26 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Where to Find Things
 
 **Adding a New Page**:
+
 1. Create component in `src/pages/YourPage/YourPage.jsx`
 2. Add route in `src/App.jsx`
 3. Add navigation link (if needed) in `src/components/Navbar.jsx`
 
 **Adding a New API Endpoint**:
+
 1. Create file in `pages/api/your-endpoint/your-endpoint.js`
 2. Use existing endpoints as templates
 3. Add authentication middleware if needed
 4. Document in API documentation
 
 **Adding a New Database Model**:
+
 1. Create model in `models/YourModel.js`
 2. Define schema with Mongoose
 3. Export model for use in API routes
 
 **Styling Components**:
+
 - Use design tokens from `styles/design-tokens.css`
 - Follow existing component patterns
 - Use CSS modules or component-scoped styles
@@ -315,6 +343,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 ### Common Tasks
 
 **Adding Authentication to an Endpoint**:
+
 ```javascript
 import { authenticate } from '../../../middleware/auth';
 
@@ -328,6 +357,7 @@ export default async function handler(req, res) {
 ```
 
 **Making an API Call from Frontend**:
+
 ```javascript
 import api from '../services/api';
 
@@ -339,6 +369,7 @@ const response = await api.post('/api/your-endpoint', { data });
 ```
 
 **Using Context in Component**:
+
 ```javascript
 import { useAuth } from '../context/AuthContext';
 
@@ -355,6 +386,7 @@ function MyComponent() {
 ### Frontend
 
 **Essential Files**:
+
 - `src/App.jsx` - Main app component, routing
 - `src/main.jsx` - Application entry point
 - `src/context/AuthContext.jsx` - Authentication state
@@ -362,6 +394,7 @@ function MyComponent() {
 - `src/utils/constants.js` - App constants and configuration
 
 **Key Components**:
+
 - `src/components/ProtectedRoute.jsx` - Route protection
 - `src/pages/Dashboard/Dashboard.jsx` - Main dashboard
 - `src/pages/PortfolioConstructor/PortfolioConstructor.jsx` - Portfolio editor
@@ -369,12 +402,14 @@ function MyComponent() {
 ### Backend
 
 **Essential Files**:
+
 - `server.js` - Server entry point, Socket.io setup
 - `lib/mongodb.js` - Database connection
 - `lib/auth.js` - Authentication utilities
 - `middleware/auth.js` - Authentication middleware
 
 **Key Endpoints**:
+
 - `pages/api/auth/` - Authentication endpoints
 - `pages/api/portfolio/` - Portfolio endpoints
 - `pages/api/admin/` - Admin endpoints
@@ -484,4 +519,3 @@ A: Create file in `pages/api/`, use existing endpoints as template, add authenti
 
 **Last Updated**: December 2024  
 **Version**: 1.0
-

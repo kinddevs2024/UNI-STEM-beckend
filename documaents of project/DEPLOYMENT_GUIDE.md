@@ -50,6 +50,7 @@ This guide provides step-by-step instructions for deploying the Global Olympiad 
 3. Create database user
 4. Whitelist server IP address (or 0.0.0.0/0 for all IPs - less secure)
 5. Get connection string:
+
    ```
    mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/olympiad-platform?retryWrites=true&w=majority
    ```
@@ -59,9 +60,11 @@ This guide provides step-by-step instructions for deploying the Global Olympiad 
 1. Install MongoDB on server
 2. Start MongoDB service
 3. Connection string format:
+
    ```
    mongodb://127.0.0.1:27017/olympiad-platform
    ```
+
 4. Ensure MongoDB is accessible from backend application
 
 **Windows MongoDB Setup**: See `UNI-STEM-beckend/MONGODB_SETUP_WINDOWS.md`
@@ -92,6 +95,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
 **Security Notes**:
+
 - Generate a strong `JWT_SECRET` (32+ characters, random)
 - Never commit `.env` file to version control
 - Use different secrets for development and production
@@ -107,6 +111,7 @@ VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
 
 **Note**: If using same domain with reverse proxy, you can use relative URLs:
+
 ```env
 VITE_API_URL=/api
 VITE_SOCKET_URL=
@@ -142,11 +147,13 @@ npm run build
 ### 3.4 Start Server
 
 **Development/Testing:**
+
 ```bash
 npm run dev
 ```
 
 **Production:**
+
 ```bash
 npm start
 ```
@@ -168,6 +175,7 @@ pm2 startup
 ```
 
 **PM2 Management:**
+
 ```bash
 pm2 list              # List processes
 pm2 logs              # View logs
@@ -260,12 +268,14 @@ server {
 }
 ```
 
-3. Test configuration:
+1. Test configuration:
+
 ```bash
 nginx -t
 ```
 
-4. Reload Nginx:
+1. Reload Nginx:
+
 ```bash
 nginx -s reload
 ```
@@ -337,11 +347,13 @@ server {
 ### 6.1 Health Check
 
 Test backend health endpoint:
+
 ```bash
 curl https://api.globalolympiad.example.com/api/health
 ```
 
 Expected response:
+
 ```json
 {"status":"ok","message":"Server is running"}
 ```
@@ -383,6 +395,7 @@ Expected response:
 ### 7.1 Firewall Configuration
 
 Allow only necessary ports:
+
 ```bash
 # Allow HTTP/HTTPS
 ufw allow 80/tcp
@@ -395,6 +408,7 @@ ufw deny 3000/tcp
 ### 7.2 SSL/TLS Configuration
 
 Use strong SSL/TLS settings in Nginx:
+
 ```nginx
 ssl_protocols TLSv1.2 TLSv1.3;
 ssl_ciphers HIGH:!aNULL:!MD5;
@@ -422,17 +436,20 @@ ssl_prefer_server_ciphers on;
 ### 8.1 Application Logs
 
 **PM2 Logs:**
+
 ```bash
 pm2 logs olympiad-backend
 ```
 
 **Nginx Logs:**
+
 - Access: `/var/log/nginx/access.log`
 - Error: `/var/log/nginx/error.log`
 
 ### 8.2 Process Monitoring
 
 **PM2 Monitoring:**
+
 ```bash
 pm2 monit
 ```
@@ -459,6 +476,7 @@ pm2 monit
 **MongoDB Atlas**: Automatic backups (if using Atlas)
 
 **Local MongoDB:**
+
 ```bash
 # Create backup
 mongodump --uri="mongodb://localhost:27017/olympiad-platform" --out=/backup/olympiad-$(date +%Y%m%d)
@@ -521,27 +539,32 @@ tar -czf uploads-backup-$(date +%Y%m%d).tar.gz uploads/
 ### Updating Application
 
 1. **Pull latest code**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies** (if needed)
+
    ```bash
    npm install
    ```
 
 3. **Rebuild frontend** (if frontend changed)
+
    ```bash
    cd UNI-STEM-Front
    npm run build
    ```
 
 4. **Restart backend**
+
    ```bash
    pm2 restart olympiad-backend
    ```
 
 5. **Reload Nginx** (if config changed)
+
    ```bash
    nginx -s reload
    ```
@@ -549,16 +572,19 @@ tar -czf uploads-backup-$(date +%Y%m%d).tar.gz uploads/
 ### Rollback Procedure
 
 1. **Restore previous code version**
+
    ```bash
    git checkout <previous-commit>
    ```
 
 2. **Restore database backup** (if schema changed)
+
    ```bash
    mongorestore --uri="..." /backup/previous-backup
    ```
 
 3. **Restart services**
+
    ```bash
    pm2 restart olympiad-backend
    ```
@@ -589,4 +615,3 @@ tar -czf uploads-backup-$(date +%Y%m%d).tar.gz uploads/
 
 **Last Updated**: December 2024  
 **Version**: 1.0
-

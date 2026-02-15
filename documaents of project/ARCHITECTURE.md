@@ -25,6 +25,7 @@ Technical architecture documentation for the Global Olympiad platform.
 ### Technology Stack
 
 **Frontend**:
+
 - React 18.2.0
 - Vite 7.2.6
 - React Router 6.20.0
@@ -33,6 +34,7 @@ Technical architecture documentation for the Global Olympiad platform.
 - Socket.io Client 4.5.4
 
 **Backend**:
+
 - Next.js 14.0.4 (API Routes)
 - Node.js 18+
 - MongoDB + Mongoose 8.0.3
@@ -40,6 +42,7 @@ Technical architecture documentation for the Global Olympiad platform.
 - JWT (jsonwebtoken 9.0.2)
 
 **Infrastructure**:
+
 - MongoDB (local or Atlas)
 - File storage (local filesystem)
 - Web server (Nginx/Apache for production)
@@ -138,6 +141,7 @@ App
 ### State Management
 
 **Context API Pattern**:
+
 - **AuthContext**: User authentication state, login/logout
 - **SocketContext**: Socket.io connection and events
 - **ThemeContext**: UI theme (light/dark)
@@ -146,6 +150,7 @@ App
 - **VerificationContext**: Portfolio verification state
 
 **Local State**:
+
 - Component-level state with `useState`
 - Form state with controlled components
 - Complex state with `useReducer` (where needed)
@@ -153,6 +158,7 @@ App
 ### Routing
 
 **Public Routes**:
+
 - `/` - Home page
 - `/about` - About page
 - `/contact` - Contact page
@@ -160,6 +166,7 @@ App
 - `/auth` - Login/Register
 
 **Protected Routes**:
+
 - `/dashboard` - User dashboard
 - `/profile` - User profile
 - `/portfolio/edit/:id` - Portfolio editor
@@ -167,6 +174,7 @@ App
 - `/university` - University dashboard (university role)
 
 **Route Protection**:
+
 ```javascript
 <Route 
   path="/admin" 
@@ -185,6 +193,7 @@ App
 ### API Structure
 
 **Next.js API Routes**:
+
 - Each file in `pages/api/` is an API endpoint
 - RESTful conventions (GET, POST, PUT, DELETE)
 - File-based routing (e.g., `pages/api/users/[id].js` → `/api/users/:id`)
@@ -286,6 +295,7 @@ Request
 ### Authentication
 
 **JWT-Based Authentication**:
+
 1. User logs in with credentials
 2. Backend validates and generates JWT
 3. JWT includes: userId, email, role
@@ -294,6 +304,7 @@ Request
 6. Token expires after 7 days (configurable)
 
 **Token Validation**:
+
 - Middleware validates token on protected routes
 - Token signature verified with JWT_SECRET
 - User and role extracted from token payload
@@ -302,12 +313,14 @@ Request
 ### Authorization
 
 **Role-Based Access Control (RBAC)**:
+
 - Roles: student, admin, owner, university, checker, resolter, school-teacher
 - Route-level protection (frontend)
 - Endpoint-level protection (backend)
 - Data-level filtering (e.g., universities see masked data)
 
 **Access Control Examples**:
+
 ```javascript
 // Frontend
 <ProtectedRoute allowedRoles={['admin', 'owner']}>
@@ -323,11 +336,13 @@ if (!['admin', 'owner'].includes(user.role)) {
 ### Data Protection
 
 **Personal Data Masking**:
+
 - Contact information masked for non-owners
 - Universities see masked email/phone
 - Implemented in `lib/contact-masking.js`
 
 **Portfolio Visibility**:
+
 - Public portfolios: accessible without authentication
 - Private portfolios: only accessible to owner
 - Backend checks `isPublic` or `visibility` flags
@@ -391,21 +406,25 @@ University User Accesses Dashboard
 ### Socket.io Architecture
 
 **Connection**:
+
 - Frontend connects to backend Socket.io server
 - Authentication via JWT token in connection auth
 - Server validates token and joins user to rooms
 
 **Rooms**:
+
 - Olympiad rooms: `olympiad-${olympiadId}`
 - Users join when starting olympiad
 - Users leave when finishing or disconnecting
 
 **Events**:
+
 - **Timer Updates**: Broadcast every second to olympiad room
 - **Leaderboard Updates**: Broadcast when submissions change
 - **Submission Notifications**: Notify when user submits
 
 **Implementation**:
+
 ```javascript
 // Frontend
 socket.on('timer-update', (data) => {
@@ -425,28 +444,33 @@ io.to(`olympiad-${olympiadId}`).emit('timer-update', {
 ### Frontend Structure
 
 **Components**: Reusable UI components
+
 - **Portfolio**: Portfolio display components
 - **PortfolioConstructor**: Portfolio editing components
 - **PortfolioEditor**: Rich text editing components
 - **PortfolioGrid/Table**: University dashboard views
 
 **Pages**: Route components
+
 - One component per route
 - May use multiple child components
 - Handle page-level state and data fetching
 
 **Context**: Global state management
+
 - Authentication state
 - Socket connection
 - Theme preferences
 - Translations
 
 **Services**: External communication
+
 - API client (Axios)
 - Socket.io client
 - Portfolio-specific API calls
 
 **Utils**: Helper functions
+
 - Constants and configuration
 - Data transformation
 - Validation functions
@@ -454,22 +478,26 @@ io.to(`olympiad-${olympiadId}`).emit('timer-update', {
 ### Backend Structure
 
 **API Routes**: Endpoint handlers
+
 - Organized by feature (auth, portfolio, admin)
 - File-based routing
 - Handle HTTP methods (GET, POST, PUT, DELETE)
 
 **Models**: Database schemas
+
 - Mongoose schemas
 - Define data structure and validation
 - Model methods for business logic
 
 **Lib**: Utility libraries
+
 - Authentication utilities
 - Database connection
 - Business logic helpers
 - File upload handling
 
 **Middleware**: Request processing
+
 - Authentication middleware
 - CORS middleware
 - Error handling
@@ -507,12 +535,14 @@ Internet
 ### Scaling Considerations
 
 **Current Architecture** (Single Server):
+
 - Frontend: Static files served by Nginx
 - Backend: Node.js process with PM2
 - Database: MongoDB (local or Atlas)
 - File Storage: Local filesystem
 
 **Future Scaling Options**:
+
 1. **Horizontal Scaling**: Multiple backend instances behind load balancer
 2. **Database Scaling**: MongoDB replica sets or sharding
 3. **File Storage**: Object storage (S3, Azure Blob)
@@ -526,27 +556,32 @@ Internet
 ### Current Monitoring
 
 **Application Logs**:
+
 - PM2 logs for backend
 - Browser console for frontend
 - Server terminal output
 
 **Health Checks**:
+
 - `GET /api/health` endpoint
 - Returns server status
 
 ### Recommended Monitoring
 
 **Application Performance**:
+
 - Response times
 - Error rates
 - Request throughput
 
 **Infrastructure**:
+
 - Server CPU/Memory
 - Database performance
 - Disk space
 
 **Business Metrics**:
+
 - User registrations
 - Olympiad submissions
 - Portfolio views
@@ -580,4 +615,3 @@ Internet
 
 **Last Updated**: December 2024  
 **Version**: 1.0
-

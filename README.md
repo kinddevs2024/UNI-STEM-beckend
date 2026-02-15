@@ -32,23 +32,27 @@ A modern backend API for the Global Olympiad platform built with **Next.js 14**,
 ### Installation
 
 1. **Install dependencies:**
+
 ```bash
 npm install
 ```
 
-2. **Create `.env` file:**
+1. **Create `.env` file:**
+
 ```bash
 cp .env.example .env
 ```
 
-3. **Configure environment variables:**
+1. **Configure environment variables:**
 Edit `.env` and update:
+
 - `MONGODB_URI` - Your MongoDB connection string
 - `JWT_SECRET` - A secure random string for JWT signing
 - `PORT` - Server port (default: 3000)
 - `FRONTEND_URL` - Your frontend URL for CORS
 
-4. **Start the development server:**
+1. **Start the development server:**
+
 ```bash
 npm run dev
 ```
@@ -58,11 +62,13 @@ The server will start on `http://localhost:3000`
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
 - `GET /api/auth/me` - Get current user (Protected)
 
 ### Olympiads
+
 - `GET /api/olympiads` - Get all published olympiads
 - `GET /api/olympiads/:id` - Get single olympiad
 - `POST /api/olympiads/:id/submit` - Submit answers (Protected)
@@ -70,6 +76,7 @@ The server will start on `http://localhost:3000`
 - `POST /api/olympiads/camera-capture` - Upload camera/screen capture (Protected)
 
 ### Admin Routes (Protected/Admin)
+
 - `GET /api/admin/olympiads` - Get all olympiads
 - `POST /api/admin/olympiads` - Create olympiad
 - `GET /api/admin/olympiads/:id` - Get olympiad
@@ -82,12 +89,14 @@ The server will start on `http://localhost:3000`
 - `GET /api/admin/camera-captures/:olympiadId` - Get camera captures
 
 ### Owner Routes (Protected/Owner)
+
 - `GET /api/owner/analytics` - Get platform analytics
 - `GET /api/owner/reports` - Get reports
 - `GET /api/owner/reports?olympiadId=:id` - Get detailed olympiad report
 - `PUT /api/owner/users/:id/role` - Update user role
 
 ### Health Check
+
 - `GET /api/health` - Server health check
 
 ## User Roles

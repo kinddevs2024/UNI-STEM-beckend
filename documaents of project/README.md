@@ -13,6 +13,7 @@ This platform is **production-ready** with complete documentation for deployment
 **Start here**: [HANDOFF.md](./HANDOFF.md) - Quick handoff overview
 
 **Production Readiness**:
+
 - **[PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md)** - Production readiness status and overview
 - **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Step-by-step deployment instructions
 - **[PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md)** - Pre-launch verification checklist
@@ -21,6 +22,7 @@ This platform is **production-ready** with complete documentation for deployment
 - **[ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)** - Environment variable reference
 
 **Developer Documentation**:
+
 - **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** - Getting started guide for new developers
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture documentation
 
@@ -57,6 +59,7 @@ Global Olympiad/
 ### Technology Stack
 
 **Frontend**:
+
 - React 18.2.0
 - Vite 7.2.6
 - React Router 6.20.0
@@ -64,6 +67,7 @@ Global Olympiad/
 - Socket.io Client 4.5.4
 
 **Backend**:
+
 - Next.js 14.0.4 (API Routes)
 - Node.js 18+
 - MongoDB with Mongoose 8.0.3
@@ -93,6 +97,7 @@ Global Olympiad/
 ### Development Setup
 
 **Backend**:
+
 ```bash
 cd UNI-STEM-beckend
 npm install
@@ -101,6 +106,7 @@ npm run dev
 ```
 
 **Frontend**:
+
 ```bash
 cd UNI-STEM-Front
 npm install
@@ -119,11 +125,13 @@ See **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** for complete deployment ins
 ### Required Environment Variables
 
 **Backend** (`.env` file):
+
 - `MONGODB_URI` - MongoDB connection string (REQUIRED)
 - `JWT_SECRET` - JWT signing secret, 32+ characters (REQUIRED)
 - `FRONTEND_URL` - Frontend URL for CORS
 
 **Frontend** (`.env` file, optional):
+
 - `VITE_API_URL` - API base URL
 - `VITE_SOCKET_URL` - Socket.io server URL
 - `VITE_GOOGLE_CLIENT_ID` - Google OAuth Client ID
@@ -146,6 +154,7 @@ See **[ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)** for complete docu
 ### ⚠️ Known Issues
 
 4 critical issues documented in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md):
+
 1. normalizeTheme loses containerWidth
 2. Client-side pagination (should use backend pagination)
 3. Search query performance (in-memory filtering)
@@ -158,6 +167,7 @@ See **[ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)** for complete docu
 ## 📚 Documentation Index
 
 ### Production Documentation
+
 - [HANDOFF.md](./HANDOFF.md) - Production handoff overview
 - [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) - Production readiness status
 - [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) - Deployment instructions
@@ -166,11 +176,13 @@ See **[ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)** for complete docu
 - [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) - Environment variables
 
 ### Technical Documentation
+
 - [UNI-STEM-Front/docs/API_ENDPOINTS.md](./UNI-STEM-Front/docs/API_ENDPOINTS.md) - API documentation
 - [UNI-STEM-Front/README.md](./UNI-STEM-Front/README.md) - Frontend README
 - [UNI-STEM-beckend/README.md](./UNI-STEM-beckend/README.md) - Backend README
 
 ### Setup Guides
+
 - [UNI-STEM-Front/docs/BACKEND_GOOGLE_SETUP.md](./UNI-STEM-Front/docs/BACKEND_GOOGLE_SETUP.md) - Google OAuth setup
 - [UNI-STEM-Front/docs/CONNECTION_GUIDE.md](./UNI-STEM-Front/docs/CONNECTION_GUIDE.md) - Connection guide
 - [UNI-STEM-beckend/MONGODB_SETUP_WINDOWS.md](./UNI-STEM-beckend/MONGODB_SETUP_WINDOWS.md) - MongoDB setup
@@ -246,6 +258,7 @@ MIT
 ## 📞 Deployment Support
 
 For deployment assistance:
+
 1. Review [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
 2. Complete [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md)
 3. Reference [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) for configuration
@@ -255,4 +268,3 @@ For deployment assistance:
 **Version**: 2.2  
 **Status**: Production Ready  
 **Last Updated**: December 2024
-

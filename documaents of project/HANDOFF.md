@@ -11,6 +11,7 @@
 ### Documentation Index
 
 **Production Readiness**:
+
 1. **[PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md)** - Complete production readiness overview
 2. **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Step-by-step deployment instructions
 3. **[PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md)** - Pre-launch verification checklist
@@ -46,6 +47,7 @@
 ### Known Issues
 
 ⚠️ **4 Critical Issues** documented in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md):
+
 1. normalizeTheme loses containerWidth
 2. University pagination uses client-side pagination
 3. Search query performance (in-memory filtering)
@@ -67,6 +69,7 @@
 ### Essential Steps
 
 1. **Configure Backend**:
+
    ```bash
    cd UNI-STEM-beckend
    # Create .env file (see ENVIRONMENT_VARIABLES.md)
@@ -75,6 +78,7 @@
    ```
 
 2. **Build & Deploy Frontend**:
+
    ```bash
    cd UNI-STEM-Front
    # Create .env file (see ENVIRONMENT_VARIABLES.md)
@@ -97,12 +101,14 @@ See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
 ### Required Environment Variables
 
 **Backend** (`.env` in backend directory):
+
 - `MONGODB_URI` - MongoDB connection string (REQUIRED)
 - `JWT_SECRET` - JWT signing secret, 32+ chars (REQUIRED)
 - `FRONTEND_URL` - Frontend URL for CORS
 - `NODE_ENV=production` - Production mode
 
 **Frontend** (`.env` in frontend directory, optional):
+
 - `VITE_API_URL` - API base URL
 - `VITE_SOCKET_URL` - Socket.io server URL
 - `VITE_GOOGLE_CLIENT_ID` - Google OAuth Client ID
@@ -116,10 +122,12 @@ See [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md) for complete referenc
 ### Technology Stack
 
 **Frontend**:
+
 - React 18.2.0 + Vite 7.2.6
 - React Router, Framer Motion, Axios, Socket.io Client
 
 **Backend**:
+
 - Next.js 14.0.4 (API Routes)
 - MongoDB + Mongoose 8.0.3
 - Socket.io 4.5.4
@@ -260,4 +268,3 @@ See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed performanc
 **Document Version**: 1.0  
 **Last Updated**: December 2024  
 **For Questions**: Refer to detailed documentation files listed above
-

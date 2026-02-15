@@ -10,9 +10,11 @@ The backend requires MongoDB. Connection error `ECONNREFUSED 127.0.0.1:27017` me
 4. In Network Access, add `0.0.0.0/0` (or your IP)
 5. Copy the connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net/global-olympiad`)
 6. In `.env` set:
+
    ```
    MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster.mongodb.net/global-olympiad
    ```
+
 7. Restart the backend
 
 ## Option B: Local MongoDB (127.0.0.1:27017)
@@ -26,11 +28,13 @@ The backend requires MongoDB. Connection error `ECONNREFUSED 127.0.0.1:27017` me
 ### Start MongoDB
 
 **If installed as a service:**
+
 ```powershell
 Start-Service MongoDB
 ```
 
 **If running manually:**
+
 ```powershell
 # Default path after install:
 & "C:\Program Files\MongoDB\Server\7.0\bin\mongod.exe" --dbpath="C:\data\db"
