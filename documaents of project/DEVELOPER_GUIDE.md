@@ -1,6 +1,6 @@
 # Developer Guide
 
-Welcome to UNI STEM! This guide will help you get started as a new developer on the project.
+Welcome to Global Olympiad! This guide will help you get started as a new developer on the project.
 
 ---
 

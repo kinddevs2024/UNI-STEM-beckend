@@ -1,6 +1,6 @@
 # Environment Variables Reference
 
-Complete documentation of all environment variables used in the UNI STEM platform.
+Complete documentation of all environment variables used in the Global Olympiad platform.
 
 ---
 
@@ -83,7 +83,7 @@ These variables have defaults but can be overridden.
 
 ```
 http://localhost:5173
-https://unistem.example.com
+https://globalolympiad.example.com
 ```
 
 **Default**: `http://localhost:5173`  
@@ -198,7 +198,7 @@ C:\uploads
 **Description**: SMTP username/login  
 **Required**: YES (for password setup emails)  
 **Format**: String  
-**Example**: `no-reply@unistem.example.com`  
+**Example**: `no-reply@globalolympiad.example.com`  
 **Default**: None  
 **Location**: Used in `lib/email.js`
 
@@ -220,7 +220,7 @@ C:\uploads
 **Description**: From address for outgoing emails  
 **Required**: YES (for password setup emails)  
 **Format**: Email address  
-**Example**: `"UNI STEM" <no-reply@unistem.example.com>`  
+**Example**: `"Global Olympiad" <no-reply@globalolympiad.example.com>`  
 **Default**: Falls back to `SMTP_USER`  
 **Location**: Used in `lib/email.js`
 
@@ -295,7 +295,7 @@ All frontend environment variables are **optional** and have defaults. They must
 
 ```
 http://localhost:3000/api
-https://api.unistem.example.com/api
+https://api.globalolympiad.example.com/api
 /api
 ```
 
@@ -321,7 +321,7 @@ https://api.unistem.example.com/api
 
 ```
 http://localhost:3000
-https://api.unistem.example.com
+https://api.globalolympiad.example.com
 ```
 
 **Default**: `http://localhost:3000`  
@@ -356,7 +356,7 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-min-32-characters-long-random-s
 # Optional (with defaults)
 PORT=3000
 NODE_ENV=production
-FRONTEND_URL=https://unistem.example.com
+FRONTEND_URL=https://globalolympiad.example.com
 HOST=0.0.0.0
 UPLOAD_PATH=./uploads
 MAX_FILE_SIZE=104857600
@@ -374,8 +374,8 @@ Create this file in `UNI-STEM-Front/`:
 
 ```env
 # Optional (with defaults)
-VITE_API_URL=https://api.unistem.example.com/api
-VITE_SOCKET_URL=https://api.unistem.example.com
+VITE_API_URL=https://api.globalolympiad.example.com/api
+VITE_SOCKET_URL=https://api.globalolympiad.example.com
 VITE_GOOGLE_CLIENT_ID=780692716304-xxxxxxxxxxxxx.apps.googleusercontent.com
 ```
 

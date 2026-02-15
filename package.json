@@ -1,7 +1,7 @@
 {
-  "name": "unistem-backend",
+  "name": "global-olympiad-backend",
   "version": "1.0.0",
-  "description": "Backend API for UNI STEM platform built with Next.js",
+  "description": "Backend API for Global Olympiad platform built with Next.js",
   "type": "module",
   "scripts": {
     "dev": "node server.js",

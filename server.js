@@ -128,7 +128,7 @@ const handle = app.getRequestHandler();
 const SWAGGER_HTML = `<!DOCTYPE html>
 <html>
 <head>
-  <title>UNI STEM API Documentation</title>
+  <title>Global Olympiad API Documentation</title>
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css">
 </head>
 <body>

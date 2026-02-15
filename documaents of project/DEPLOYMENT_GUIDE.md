@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-This guide provides step-by-step instructions for deploying the UNI STEM platform to production.
+This guide provides step-by-step instructions for deploying the Global Olympiad platform to production.
 
 ---
 
@@ -23,7 +23,7 @@ This guide provides step-by-step instructions for deploying the UNI STEM platfor
 ### Domain & SSL
 
 - Domain name for frontend (e.g., `olympiad.example.com`)
-- Domain name for backend API (e.g., `api.unistem.example.com`)
+- Domain name for backend API (e.g., `api.globalolympiad.example.com`)
 - SSL certificates for HTTPS (Let's Encrypt recommended)
 
 ---
@@ -101,8 +101,8 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 Create `.env` file in `UNI-STEM-Front/` (optional, can use defaults):
 
 ```env
-VITE_API_URL=https://api.unistem.example.com/api
-VITE_SOCKET_URL=https://api.unistem.example.com
+VITE_API_URL=https://api.globalolympiad.example.com/api
+VITE_SOCKET_URL=https://api.globalolympiad.example.com
 VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
 
@@ -305,7 +305,7 @@ If using separate domains for frontend and backend, or need more control:
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name api.unistem.example.com;
+   server_name api.globalolympiad.example.com;
 
     ssl_certificate /path/to/certificate.crt;
     ssl_certificate_key /path/to/private.key;
@@ -338,7 +338,7 @@ server {
 
 Test backend health endpoint:
 ```bash
-curl https://api.unistem.example.com/api/health
+curl https://api.globalolympiad.example.com/api/health
 ```
 
 Expected response:

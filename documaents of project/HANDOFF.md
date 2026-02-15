@@ -1,6 +1,6 @@
 # Production Handoff Document
 
-**Project**: UNI STEM v2.2  
+**Project**: Global Olympiad v2.2  
 **Handoff Date**: December 2024  
 **Status**: Ready for Production Deployment
 

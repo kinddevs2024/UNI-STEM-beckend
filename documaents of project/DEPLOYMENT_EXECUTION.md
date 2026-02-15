@@ -203,7 +203,7 @@ pm2 monit
 # Create systemd service file: /etc/systemd/system/olympiad-backend.service
 sudo tee /etc/systemd/system/olympiad-backend.service > /dev/null << 'EOF'
 [Unit]
-Description=UNI STEM Backend
+Description=Global Olympiad Backend
 After=network.target
 
 [Service]

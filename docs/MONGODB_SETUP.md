@@ -1,4 +1,4 @@
-# MongoDB Setup for UNI STEM
+# MongoDB Setup for Global Olympiad
 
 The backend requires MongoDB. Connection error `ECONNREFUSED 127.0.0.1:27017` means MongoDB is not running.
 
@@ -8,10 +8,10 @@ The backend requires MongoDB. Connection error `ECONNREFUSED 127.0.0.1:27017` me
 2. Create a free account and cluster
 3. Create a database user (username + password)
 4. In Network Access, add `0.0.0.0/0` (or your IP)
-5. Copy the connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net/unistem`)
+5. Copy the connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net/global-olympiad`)
 6. In `.env` set:
    ```
-   MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster.mongodb.net/unistem
+   MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster.mongodb.net/global-olympiad
    ```
 7. Restart the backend
 

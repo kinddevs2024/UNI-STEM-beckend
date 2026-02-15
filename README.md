@@ -1,6 +1,6 @@
-# UNI STEM Backend
+# Global Olympiad Backend
 
-A modern backend API for the UNI STEM platform built with **Next.js 14**, MongoDB, and Socket.io.
+A modern backend API for the Global Olympiad platform built with **Next.js 14**, MongoDB, and Socket.io.
 
 ## Features
 

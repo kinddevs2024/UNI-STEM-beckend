@@ -9,7 +9,7 @@
 2. **Create cluster:** "Build a Database" → M0 FREE → Create
 
 3. **Create user:** Security → Database Access → Add New User
-   - Username: `unistem`
+   - Username: `global-olympiad`
    - Password: (create one, save it)
    - Add user
 
@@ -19,13 +19,13 @@
 
 5. **Get connection string:** Database → Connect → Drivers → Copy connection string
    - Replace `<password>` with your actual password
-   - Example: `mongodb+srv://unistem:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority`
+   - Example: `mongodb+srv://global-olympiad:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority`
 
 6. **Update `.env`** in `UNI-STEM-beckend`:
    ```
-   MONGODB_URI=mongodb+srv://unistem:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/unistem?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://global-olympiad:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/global-olympiad?retryWrites=true&w=majority
    ```
-   (Add `/unistem` before `?` for database name)
+   (Add `/global-olympiad` before `?` for database name)
 
 7. **Restart backend:** Stop (`Ctrl+C`) and run `npm run dev` again
 

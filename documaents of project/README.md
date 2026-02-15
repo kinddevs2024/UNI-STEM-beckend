@@ -1,6 +1,6 @@
-# UNI STEM v2.2
+# Global Olympiad v2.2
 
-A comprehensive online platform for academic olympiads (UNI STEM) with advanced proctoring features, portfolio management, and university dashboard.
+A comprehensive online platform for academic olympiads (Global Olympiad) with advanced proctoring features, portfolio management, and university dashboard.
 
 ---
 
@@ -29,7 +29,7 @@ This platform is **production-ready** with complete documentation for deployment
 ## 📁 Project Structure
 
 ```
-UNI STEM/
+Global Olympiad/
 ├── UNI-STEM-Front/                   # Frontend (React + Vite)
 │   ├── src/                          # Source code
 │   ├── docs/                         # Frontend documentation

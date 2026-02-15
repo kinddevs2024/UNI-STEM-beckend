@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive overview of the UNI STEM platform production readiness status, including verified functionality, known issues, deployment requirements, and operational procedures.
+This document provides a comprehensive overview of the Global Olympiad platform production readiness status, including verified functionality, known issues, deployment requirements, and operational procedures.
 
 ---
 
