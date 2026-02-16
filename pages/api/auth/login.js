@@ -77,6 +77,16 @@ export default async function handler(req, res) {
   try {
     await connectMongoDB();
 
+    const smtpConfigured = Boolean(
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS &&
+      (process.env.SMTP_FROM || process.env.SMTP_USER)
+    );
+
+    const requireEmailVerification =
+      process.env.REQUIRE_EMAIL_VERIFICATION === 'true' && smtpConfigured;
+
     const { email, password } = req.body;
 
     // Validate email
@@ -113,7 +123,11 @@ export default async function handler(req, res) {
         userDoc.passwordResetExpires = new Date(Date.now() + resetTtlHours * 60 * 60 * 1000);
         await userDoc.save();
 
-        const frontendBase = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
+        const frontendBase =
+          process.env.FRONTEND_URL ||
+          (process.env.NODE_ENV === 'development'
+            ? 'http://localhost:5173'
+            : 'http://173.249.47.147');
         const resetPath = process.env.RESET_PASSWORD_PATH || RESET_PASSWORD_PATH;
         const resetUrl = new URL(resetPath, frontendBase);
         resetUrl.searchParams.set('email', user.email);
@@ -153,6 +167,16 @@ export default async function handler(req, res) {
     }
 
     if (user.emailVerified === false) {
+      if (!requireEmailVerification) {
+        const userDoc = await User.findById(user._id);
+        if (userDoc) {
+          userDoc.emailVerified = true;
+          userDoc.emailVerificationTokenHash = undefined;
+          userDoc.emailVerificationExpires = undefined;
+          await userDoc.save();
+          user.emailVerified = true;
+        }
+      } else {
       const verifyTtlHours = process.env.EMAIL_VERIFY_TTL_HOURS
         ? Number(process.env.EMAIL_VERIFY_TTL_HOURS)
         : EMAIL_VERIFY_TTL_HOURS;
@@ -171,7 +195,11 @@ export default async function handler(req, res) {
         );
         await userDoc.save();
 
-        const frontendBase = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
+        const frontendBase =
+          process.env.FRONTEND_URL ||
+          (process.env.NODE_ENV === 'development'
+            ? 'http://localhost:5173'
+            : 'http://173.249.47.147');
         const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
         const verifyUrl = new URL(verifyPath, frontendBase);
         verifyUrl.searchParams.set('email', user.email);
@@ -193,6 +221,7 @@ export default async function handler(req, res) {
         message: 'Email is not verified. We sent a verification link to your email.',
         emailVerificationRequired: true,
       });
+      }
     }
 
     const token = generateToken(user._id.toString());

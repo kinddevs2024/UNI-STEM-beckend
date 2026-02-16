@@ -22,7 +22,11 @@ const nextConfig = {
           { key: "Access-Control-Allow-Credentials", value: "true" },
           {
             key: "Access-Control-Allow-Origin",
-            value: process.env.FRONTEND_URL || "http://localhost:5173",
+            value:
+              process.env.FRONTEND_URL ||
+              (process.env.NODE_ENV === "development"
+                ? "http://localhost:5173"
+                : "http://173.249.47.147"),
           },
           {
             key: "Access-Control-Allow-Methods",

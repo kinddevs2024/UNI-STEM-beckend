@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import User from '../../../models/User.js';
+import { generateToken } from '../../../lib/auth.js';
 import { sendEmailVerification } from '../../../lib/email.js';
 import { VERIFY_EMAIL_PATH, EMAIL_VERIFY_TTL_HOURS } from '../../../lib/email-constants.js';
 
@@ -99,6 +100,16 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
+    const smtpConfigured = Boolean(
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS &&
+      (process.env.SMTP_FROM || process.env.SMTP_USER)
+    );
+
+    const requireEmailVerification =
+      process.env.REQUIRE_EMAIL_VERIFICATION === 'true' && smtpConfigured;
+
     // Check if request body exists
     if (!req.body) {
       return res.status(400).json({
@@ -185,6 +196,36 @@ export default async function handler(req, res) {
       userLogo,
     });
 
+    const userDoc = await User.findById(user._id);
+    if (!userDoc) {
+      return res.status(500).json({
+        success: false,
+        message: 'Registration failed. Please try again.',
+      });
+    }
+
+    if (!requireEmailVerification) {
+      userDoc.emailVerified = true;
+      userDoc.emailVerificationTokenHash = undefined;
+      userDoc.emailVerificationExpires = undefined;
+      await userDoc.save();
+
+      const token = generateToken(user._id.toString());
+
+      return res.status(201).json({
+        success: true,
+        emailVerificationRequired: false,
+        message: 'Registration successful.',
+        token,
+        user: {
+          _id: user._id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      });
+    }
+
     const verifyTtlHours = process.env.EMAIL_VERIFY_TTL_HOURS
       ? Number(process.env.EMAIL_VERIFY_TTL_HOURS)
       : EMAIL_VERIFY_TTL_HOURS;
@@ -195,14 +236,6 @@ export default async function handler(req, res) {
       .update(rawToken)
       .digest('hex');
 
-    const userDoc = await User.findById(user._id);
-    if (!userDoc) {
-      return res.status(500).json({
-        success: false,
-        message: 'Registration failed. Please try again.',
-      });
-    }
-
     userDoc.emailVerified = false;
     userDoc.emailVerificationTokenHash = tokenHash;
     userDoc.emailVerificationExpires = new Date(
@@ -210,7 +243,11 @@ export default async function handler(req, res) {
     );
     await userDoc.save();
 
-    const frontendBase = process.env.FRONTEND_URL || 'https://global-olimpiad-v2-2.vercel.app';
+    const frontendBase =
+      process.env.FRONTEND_URL ||
+      (process.env.NODE_ENV === 'development'
+        ? 'http://localhost:5173'
+        : 'http://173.249.47.147');
     const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
     const verifyUrl = new URL(verifyPath, frontendBase);
     verifyUrl.searchParams.set('email', user.email);
@@ -224,10 +261,24 @@ export default async function handler(req, res) {
       });
     } catch (emailError) {
       console.error('Email verification send error:', emailError);
-      await User.deleteOne({ _id: user._id });
-      return res.status(500).json({
-        success: false,
-        message: 'Registration failed. Email could not be sent.',
+      userDoc.emailVerified = true;
+      userDoc.emailVerificationTokenHash = undefined;
+      userDoc.emailVerificationExpires = undefined;
+      await userDoc.save();
+
+      const token = generateToken(user._id.toString());
+
+      return res.status(201).json({
+        success: true,
+        emailVerificationRequired: false,
+        message: 'Registration successful. Email service is unavailable, verification skipped.',
+        token,
+        user: {
+          _id: user._id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
       });
     }
 

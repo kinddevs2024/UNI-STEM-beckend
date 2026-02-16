@@ -42,7 +42,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid amount (UZS)' });
     }
 
-    const url = returnUrl && typeof returnUrl === 'string' ? returnUrl : `${process.env.FRONTEND_URL || 'http://localhost:5173'}/buy-coins`;
+    const frontendBase =
+      process.env.FRONTEND_URL ||
+      (process.env.NODE_ENV === 'development'
+        ? 'http://localhost:5173'
+        : 'http://173.249.47.147');
+    const url = returnUrl && typeof returnUrl === 'string' ? returnUrl : `${frontendBase}/buy-coins`;
 
     await connectMongoDB();
 
