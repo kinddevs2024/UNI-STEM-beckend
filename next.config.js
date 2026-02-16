@@ -19,14 +19,9 @@ const nextConfig = {
       {
         source: "/api/:path*",
         headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
           {
             key: "Access-Control-Allow-Origin",
-            value:
-              process.env.FRONTEND_URL ||
-              (process.env.NODE_ENV === "development"
-                ? "http://localhost:5173"
-                : "https://unistem.vercel.app"),
+            value: "*",
           },
           {
             key: "Access-Control-Allow-Methods",

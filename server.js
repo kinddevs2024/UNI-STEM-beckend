@@ -107,13 +107,7 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOST || '0.0.0.0'; // Bind to all network interfaces
 const port = parseInt(process.env.PORT || '3000', 10);
 
-// CORS: strict origins in production; '*' in dev if not set
-const defaultFrontendOrigin = process.env.FRONTEND_URL || (dev ? 'http://localhost:5173' : 'https://unistem.vercel.app/');
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
-  : dev
-    ? ['*']
-    : [defaultFrontendOrigin, 'https://unistem.vercel.app/', 'http://localhost:5173', 'http://localhost:3000'];
+// CORS disabled: allow all origins
 
 // Leaderboard broadcast throttle: max 1 per olympiad per 10s
 const LEADERBOARD_THROTTLE_MS = 10000;
@@ -187,7 +181,7 @@ app.prepare().then(() => {
   // Initialize Socket.io with CORS - strict origins in production
   const io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins,
+      origin: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],

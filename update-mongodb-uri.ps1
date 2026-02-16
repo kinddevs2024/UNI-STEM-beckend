@@ -30,4 +30,3 @@ Write-Host "✅ Updated MONGODB_URI in .env file"
 Write-Host "📋 New connection string: $ConnectionString"
 Write-Host ""
 Write-Host "🔄 Please restart your server: npm run dev"
-
