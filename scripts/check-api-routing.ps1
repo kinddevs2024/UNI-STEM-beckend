@@ -1,6 +1,6 @@
 param(
-    [string]$FrontendBase = "http://173.249.47.147",
-    [string]$BackendBase = "http://173.249.47.147",
+    [string]$FrontendBase = "https://unistem.vercel.app/",
+    [string]$BackendBase = "https://kinddevs2024-global-olimpiad-v2-2-b.vercel.app/",
     [int]$TimeoutSec = 20
 )
 

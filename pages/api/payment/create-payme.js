@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       process.env.FRONTEND_URL ||
       (process.env.NODE_ENV === 'development'
         ? 'http://localhost:5173'
-        : 'http://173.249.47.147');
+        : 'https://unistem.vercel.app');
     const url = returnUrl && typeof returnUrl === 'string' ? returnUrl : `${frontendBase}/buy-coins`;
 
     await connectMongoDB();

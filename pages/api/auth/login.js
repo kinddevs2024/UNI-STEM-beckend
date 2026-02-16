@@ -127,7 +127,7 @@ export default async function handler(req, res) {
           process.env.FRONTEND_URL ||
           (process.env.NODE_ENV === 'development'
             ? 'http://localhost:5173'
-            : 'http://173.249.47.147');
+            : 'https://unistem.vercel.app');
         const resetPath = process.env.RESET_PASSWORD_PATH || RESET_PASSWORD_PATH;
         const resetUrl = new URL(resetPath, frontendBase);
         resetUrl.searchParams.set('email', user.email);
@@ -199,7 +199,7 @@ export default async function handler(req, res) {
           process.env.FRONTEND_URL ||
           (process.env.NODE_ENV === 'development'
             ? 'http://localhost:5173'
-            : 'http://173.249.47.147');
+            : 'https://unistem.vercel.app');
         const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
         const verifyUrl = new URL(verifyPath, frontendBase);
         verifyUrl.searchParams.set('email', user.email);

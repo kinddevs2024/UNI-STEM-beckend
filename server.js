@@ -108,12 +108,12 @@ const hostname = process.env.HOST || '0.0.0.0'; // Bind to all network interface
 const port = parseInt(process.env.PORT || '3000', 10);
 
 // CORS: strict origins in production; '*' in dev if not set
-const defaultFrontendOrigin = process.env.FRONTEND_URL || (dev ? 'http://localhost:5173' : 'http://173.249.47.147');
+const defaultFrontendOrigin = process.env.FRONTEND_URL || (dev ? 'http://localhost:5173' : 'https://unistem.vercel.app/');
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
   : dev
     ? ['*']
-    : [defaultFrontendOrigin, 'http://173.249.47.147', 'http://localhost:5173', 'http://localhost:3000'];
+    : [defaultFrontendOrigin, 'https://unistem.vercel.app/', 'http://localhost:5173', 'http://localhost:3000'];
 
 // Leaderboard broadcast throttle: max 1 per olympiad per 10s
 const LEADERBOARD_THROTTLE_MS = 10000;
@@ -497,7 +497,7 @@ app.prepare().then(() => {
       console.log(`📚 Swagger UI: http://${localIP}:${port}/api-docs`);
       console.log(`📋 Swagger JSON: http://${localIP}:${port}/api/swagger.json`);
       console.log(`🔌 Socket.io: http://${localIP}:${port}`);
-      console.log(`📱 Frontend: ${process.env.FRONTEND_URL || (dev ? 'http://localhost:5173' : 'http://173.249.47.147')}`);
+      console.log(`📱 Frontend: ${process.env.FRONTEND_URL || (dev ? 'http://localhost:5173' : 'https://unistem.vercel.app/')}`);
       console.log(``);
       console.log(`💡 Access from other devices using: http://${localIP}:${port}`);
       
