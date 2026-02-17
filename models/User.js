@@ -85,6 +85,15 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  passwordResetCodeSentAt: {
+    type: Date,
+    default: null
+  },
+  passwordResetFailedAttempts: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   emailVerified: {
     type: Boolean,
     default: false
@@ -97,6 +106,15 @@ const userSchema = new mongoose.Schema({
   emailVerificationExpires: {
     type: Date,
     default: null
+  },
+  emailVerificationCodeSentAt: {
+    type: Date,
+    default: null
+  },
+  emailVerificationFailedAttempts: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, {
   timestamps: true

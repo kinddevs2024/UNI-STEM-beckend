@@ -6,36 +6,13 @@ import { handleCORS } from '../../../lib/middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 import crypto from 'crypto';
 import User from '../../../models/User.js';
-import { sendPasswordSetupEmail, sendEmailVerification } from '../../../lib/email.js';
+import { sendPasswordResetCodeEmail, sendEmailVerification } from '../../../lib/email.js';
 import {
-  VERIFY_EMAIL_PATH,
-  EMAIL_VERIFY_TTL_HOURS,
-  RESET_PASSWORD_PATH,
-  PASSWORD_RESET_TTL_HOURS,
+  EMAIL_VERIFY_CODE_TTL_MINUTES,
+  PASSWORD_RESET_CODE_TTL_MINUTES,
+  EMAIL_VERIFY_CODE_RESEND_COOLDOWN_SECONDS,
+  PASSWORD_RESET_CODE_RESEND_COOLDOWN_SECONDS,
 } from '../../../lib/email-constants.js';
-
-function getFrontendBaseUrl(req) {
-  const configured = process.env.FRONTEND_URL;
-  if (configured && configured.trim()) {
-    return configured.trim();
-  }
-
-  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
-  if (forwardedHost && typeof forwardedHost === 'string') {
-    const forwardedProto = req.headers['x-forwarded-proto'];
-    const protocol =
-      typeof forwardedProto === 'string' && forwardedProto.trim()
-        ? forwardedProto.split(',')[0].trim()
-        : process.env.NODE_ENV === 'production'
-          ? 'https'
-          : 'http';
-    return `${protocol}://${forwardedHost}`;
-  }
-
-  return process.env.NODE_ENV === 'development'
-    ? 'http://localhost:5173'
-    : 'http://localhost:3000';
-}
 
 /**
  * @swagger
@@ -108,12 +85,13 @@ export default async function handler(req, res) {
     );
 
     const requireEmailVerification =
-      process.env.REQUIRE_EMAIL_VERIFICATION !== 'false' && smtpConfigured;
+      process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
 
     const { email, password } = req.body;
+    const normalizedEmail = String(email || '').toLowerCase().trim();
 
     // Validate email
-    if (!email) {
+    if (!normalizedEmail) {
       return res.status(400).json({ 
         success: false,
         message: 'Please provide email'
@@ -121,7 +99,7 @@ export default async function handler(req, res) {
     }
 
     // Check for user
-    const user = await findUserByEmail(email);
+    const user = await findUserByEmail(normalizedEmail);
     if (!user) {
       return res.status(401).json({ 
         success: false,
@@ -137,33 +115,41 @@ export default async function handler(req, res) {
         });
       }
 
-      const resetTtlHours = process.env.PASSWORD_RESET_TTL_HOURS
-        ? Number(process.env.PASSWORD_RESET_TTL_HOURS)
-        : PASSWORD_RESET_TTL_HOURS;
+      const resetTtlMinutes = process.env.PASSWORD_RESET_CODE_TTL_MINUTES
+        ? Number(process.env.PASSWORD_RESET_CODE_TTL_MINUTES)
+        : PASSWORD_RESET_CODE_TTL_MINUTES;
 
-      const rawToken = crypto.randomBytes(24).toString('hex');
+      const rawCode = String(Math.floor(100000 + Math.random() * 900000));
       const tokenHash = crypto
         .createHash('sha256')
-        .update(rawToken)
+        .update(rawCode)
         .digest('hex');
 
       const userDoc = await User.findById(user._id);
       if (userDoc) {
+        if (userDoc.passwordResetCodeSentAt) {
+          const elapsedMs = Date.now() - new Date(userDoc.passwordResetCodeSentAt).getTime();
+          const cooldownMs = PASSWORD_RESET_CODE_RESEND_COOLDOWN_SECONDS * 1000;
+          if (elapsedMs < cooldownMs) {
+            const remaining = Math.ceil((cooldownMs - elapsedMs) / 1000);
+            return res.status(429).json({
+              success: false,
+              message: `Please wait ${remaining}s before requesting a new reset code.`,
+            });
+          }
+        }
+
         userDoc.passwordResetTokenHash = tokenHash;
-        userDoc.passwordResetExpires = new Date(Date.now() + resetTtlHours * 60 * 60 * 1000);
+        userDoc.passwordResetExpires = new Date(Date.now() + resetTtlMinutes * 60 * 1000);
+        userDoc.passwordResetCodeSentAt = new Date();
+        userDoc.passwordResetFailedAttempts = 0;
         await userDoc.save();
 
-        const frontendBase = getFrontendBaseUrl(req);
-        const resetPath = process.env.RESET_PASSWORD_PATH || RESET_PASSWORD_PATH;
-        const resetUrl = new URL(resetPath, frontendBase);
-        resetUrl.searchParams.set('email', user.email);
-        resetUrl.searchParams.set('token', rawToken);
-
         try {
-          await sendPasswordSetupEmail({
+          await sendPasswordResetCodeEmail({
             to: user.email,
             name: user.name,
-            link: resetUrl.toString(),
+            code: rawCode,
           });
         } catch (emailError) {
           console.error('Password setup email error:', emailError);
@@ -176,7 +162,7 @@ export default async function handler(req, res) {
 
       return res.status(401).json({
         success: false,
-        message: 'Your account is not activated yet. We sent a confirmation link to your email. Open it to confirm your account and create a new password.',
+        message: 'Your account has no password yet. We sent a 6-digit confirmation code to your email. Enter it and create a new password.',
         passwordResetRequired: true
       });
     }
@@ -197,6 +183,13 @@ export default async function handler(req, res) {
     }
 
     if (user.emailVerified === false) {
+      if (requireEmailVerification && !smtpConfigured) {
+        return res.status(503).json({
+          success: false,
+          message: 'Email verification service is unavailable. Please contact support.',
+        });
+      }
+
       if (!requireEmailVerification) {
         const userDoc = await User.findById(user._id);
         if (userDoc) {
@@ -207,35 +200,43 @@ export default async function handler(req, res) {
           user.emailVerified = true;
         }
       } else {
-      const verifyTtlHours = process.env.EMAIL_VERIFY_TTL_HOURS
-        ? Number(process.env.EMAIL_VERIFY_TTL_HOURS)
-        : EMAIL_VERIFY_TTL_HOURS;
+      const verifyTtlMinutes = process.env.EMAIL_VERIFY_CODE_TTL_MINUTES
+        ? Number(process.env.EMAIL_VERIFY_CODE_TTL_MINUTES)
+        : EMAIL_VERIFY_CODE_TTL_MINUTES;
 
-      const rawToken = crypto.randomBytes(24).toString('hex');
+      const rawCode = String(Math.floor(100000 + Math.random() * 900000));
       const tokenHash = crypto
         .createHash('sha256')
-        .update(rawToken)
+        .update(rawCode)
         .digest('hex');
 
       const userDoc = await User.findById(user._id);
       if (userDoc) {
+        if (userDoc.emailVerificationCodeSentAt) {
+          const elapsedMs = Date.now() - new Date(userDoc.emailVerificationCodeSentAt).getTime();
+          const cooldownMs = EMAIL_VERIFY_CODE_RESEND_COOLDOWN_SECONDS * 1000;
+          if (elapsedMs < cooldownMs) {
+            const remaining = Math.ceil((cooldownMs - elapsedMs) / 1000);
+            return res.status(429).json({
+              success: false,
+              message: `Please wait ${remaining}s before requesting a new verification code.`,
+            });
+          }
+        }
+
         userDoc.emailVerificationTokenHash = tokenHash;
         userDoc.emailVerificationExpires = new Date(
-          Date.now() + verifyTtlHours * 60 * 60 * 1000
+          Date.now() + verifyTtlMinutes * 60 * 1000
         );
+        userDoc.emailVerificationCodeSentAt = new Date();
+        userDoc.emailVerificationFailedAttempts = 0;
         await userDoc.save();
-
-        const frontendBase = getFrontendBaseUrl(req);
-        const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
-        const verifyUrl = new URL(verifyPath, frontendBase);
-        verifyUrl.searchParams.set('email', user.email);
-        verifyUrl.searchParams.set('token', rawToken);
 
         try {
           await sendEmailVerification({
             to: user.email,
             name: user.name,
-            link: verifyUrl.toString(),
+            code: rawCode,
           });
         } catch (emailError) {
           console.error('Email verification send error:', emailError);
@@ -244,7 +245,7 @@ export default async function handler(req, res) {
 
       return res.status(401).json({
         success: false,
-        message: 'Email is not verified. We sent a verification link to your email.',
+        message: 'Email is not verified. We sent a 6-digit verification code to your email.',
         emailVerificationRequired: true,
       });
       }

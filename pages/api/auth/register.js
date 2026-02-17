@@ -9,30 +9,10 @@ import crypto from 'crypto';
 import User from '../../../models/User.js';
 import { generateToken } from '../../../lib/auth.js';
 import { sendEmailVerification } from '../../../lib/email.js';
-import { VERIFY_EMAIL_PATH, EMAIL_VERIFY_TTL_HOURS } from '../../../lib/email-constants.js';
-
-function getFrontendBaseUrl(req) {
-  const configured = process.env.FRONTEND_URL;
-  if (configured && configured.trim()) {
-    return configured.trim();
-  }
-
-  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
-  if (forwardedHost && typeof forwardedHost === 'string') {
-    const forwardedProto = req.headers['x-forwarded-proto'];
-    const protocol =
-      typeof forwardedProto === 'string' && forwardedProto.trim()
-        ? forwardedProto.split(',')[0].trim()
-        : process.env.NODE_ENV === 'production'
-          ? 'https'
-          : 'http';
-    return `${protocol}://${forwardedHost}`;
-  }
-
-  return process.env.NODE_ENV === 'development'
-    ? 'http://localhost:5173'
-    : 'http://localhost:3000';
-}
+import {
+  EMAIL_VERIFY_CODE_TTL_MINUTES,
+  EMAIL_VERIFY_CODE_RESEND_COOLDOWN_SECONDS,
+} from '../../../lib/email-constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,7 +111,14 @@ export default async function handler(req, res) {
     );
 
     const requireEmailVerification =
-      process.env.REQUIRE_EMAIL_VERIFICATION !== 'false' && smtpConfigured;
+      process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
+
+    if (requireEmailVerification && !smtpConfigured) {
+      return res.status(503).json({
+        success: false,
+        message: 'Email verification service is unavailable. Please try again later.',
+      });
+    }
 
     // Check if request body exists
     if (!req.body) {
@@ -141,7 +128,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { 
+    const {
       name, 
       email, 
       password, 
@@ -157,8 +144,10 @@ export default async function handler(req, res) {
       userLogo 
     } = req.body;
 
+    const normalizedEmail = String(email || '').toLowerCase().trim();
+
     // Validate required fields
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide name, email, and password',
@@ -167,7 +156,7 @@ export default async function handler(req, res) {
 
     // Validate email format
     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({ 
         success: false,
         message: 'Please provide a valid email' 
@@ -176,7 +165,7 @@ export default async function handler(req, res) {
 
 
     // Check if user exists
-    const userExists = await findUserByEmail(email);
+    const userExists = await findUserByEmail(normalizedEmail);
     if (userExists) {
       return res.status(400).json({ 
         success: false,
@@ -205,7 +194,7 @@ export default async function handler(req, res) {
     // Create user
     const user = await createUser({
       name,
-      email,
+      email: normalizedEmail,
       password,
       role: finalRole,
       firstName,
@@ -249,34 +238,42 @@ export default async function handler(req, res) {
       });
     }
 
-    const verifyTtlHours = process.env.EMAIL_VERIFY_TTL_HOURS
-      ? Number(process.env.EMAIL_VERIFY_TTL_HOURS)
-      : EMAIL_VERIFY_TTL_HOURS;
+    const verifyTtlMinutes = process.env.EMAIL_VERIFY_CODE_TTL_MINUTES
+      ? Number(process.env.EMAIL_VERIFY_CODE_TTL_MINUTES)
+      : EMAIL_VERIFY_CODE_TTL_MINUTES;
 
-    const rawToken = crypto.randomBytes(24).toString('hex');
+    if (userDoc.emailVerificationCodeSentAt) {
+      const elapsedMs = Date.now() - new Date(userDoc.emailVerificationCodeSentAt).getTime();
+      const cooldownMs = EMAIL_VERIFY_CODE_RESEND_COOLDOWN_SECONDS * 1000;
+      if (elapsedMs < cooldownMs) {
+        const remaining = Math.ceil((cooldownMs - elapsedMs) / 1000);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${remaining}s before requesting a new verification code.`,
+        });
+      }
+    }
+
+    const rawCode = String(Math.floor(100000 + Math.random() * 900000));
     const tokenHash = crypto
       .createHash('sha256')
-      .update(rawToken)
+      .update(rawCode)
       .digest('hex');
 
     userDoc.emailVerified = false;
     userDoc.emailVerificationTokenHash = tokenHash;
     userDoc.emailVerificationExpires = new Date(
-      Date.now() + verifyTtlHours * 60 * 60 * 1000
+      Date.now() + verifyTtlMinutes * 60 * 1000
     );
+    userDoc.emailVerificationCodeSentAt = new Date();
+    userDoc.emailVerificationFailedAttempts = 0;
     await userDoc.save();
-
-    const frontendBase = getFrontendBaseUrl(req);
-    const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
-    const verifyUrl = new URL(verifyPath, frontendBase);
-    verifyUrl.searchParams.set('email', user.email);
-    verifyUrl.searchParams.set('token', rawToken);
 
     try {
       await sendEmailVerification({
         to: user.email,
         name: user.name,
-        link: verifyUrl.toString(),
+        code: rawCode,
       });
     } catch (emailError) {
       console.error('Email verification send error:', emailError);
@@ -304,7 +301,7 @@ export default async function handler(req, res) {
     res.status(201).json({
       success: true,
       emailVerificationRequired: true,
-      message: 'We sent a verification link to your email.',
+      message: 'We sent a 6-digit verification code to your email.',
       user: {
         _id: user._id,
         email: user.email,

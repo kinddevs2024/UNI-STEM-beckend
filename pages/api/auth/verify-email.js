@@ -4,6 +4,7 @@ import { handleCORS } from "../../../lib/middleware/cors.js";
 import User from "../../../models/User.js";
 import { generateToken } from "../../../lib/auth.js";
 import { findUserByIdWithoutPassword } from "../../../lib/user-helper.js";
+import { MAX_CODE_VERIFY_ATTEMPTS } from "../../../lib/email-constants.js";
 
 export default async function handler(req, res) {
   if (handleCORS(req, res)) return;
@@ -13,18 +14,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, token: verifyToken } = req.body || {};
+    const { email, token: verifyToken, code } = req.body || {};
+    const verificationInput = String(verifyToken || code || "").trim();
+    const normalizedEmail = String(email || "").toLowerCase().trim();
 
-    if (!email || !verifyToken) {
+    if (!normalizedEmail || !verificationInput) {
       return res.status(400).json({
         success: false,
-        message: "Email and token are required",
+        message: "Email and verification code are required",
+      });
+    }
+
+    if (!/^\d{6}$/.test(verificationInput)) {
+      return res.status(400).json({
+        success: false,
+        message: "Verification code must be 6 digits",
       });
     }
 
     await connectMongoDB();
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -53,28 +63,44 @@ export default async function handler(req, res) {
     if (user.emailVerificationExpires.getTime() < Date.now()) {
       user.emailVerificationTokenHash = null;
       user.emailVerificationExpires = null;
+      user.emailVerificationFailedAttempts = 0;
       await user.save();
       return res.status(400).json({
         success: false,
-        message: "Email verification token has expired",
+        message: "Verification code has expired",
       });
     }
 
     const tokenHash = crypto
       .createHash("sha256")
-      .update(verifyToken)
+      .update(verificationInput)
       .digest("hex");
 
     if (tokenHash !== user.emailVerificationTokenHash) {
+      user.emailVerificationFailedAttempts = (user.emailVerificationFailedAttempts || 0) + 1;
+
+      if (user.emailVerificationFailedAttempts >= MAX_CODE_VERIFY_ATTEMPTS) {
+        user.emailVerificationTokenHash = null;
+        user.emailVerificationExpires = null;
+        user.emailVerificationFailedAttempts = 0;
+        await user.save();
+        return res.status(400).json({
+          success: false,
+          message: "Too many invalid attempts. Request a new verification code.",
+        });
+      }
+
+      await user.save();
       return res.status(400).json({
         success: false,
-        message: "Invalid email verification token",
+        message: "Invalid email verification code",
       });
     }
 
     user.emailVerified = true;
     user.emailVerificationTokenHash = null;
     user.emailVerificationExpires = null;
+    user.emailVerificationFailedAttempts = 0;
     await user.save();
 
     const authToken = generateToken(user._id.toString());
