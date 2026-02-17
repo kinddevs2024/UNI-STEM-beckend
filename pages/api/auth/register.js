@@ -275,8 +275,14 @@ export default async function handler(req, res) {
         name: user.name,
         code: rawCode,
       });
+      console.log('[register] Email sent successfully to:', user.email);
     } catch (emailError) {
-      console.error('Email verification send error:', emailError);
+      console.error('[register] Email verification send failed:', {
+        to: user.email,
+        error: emailError.message,
+        code: emailError.code,
+        responseCode: emailError.responseCode,
+      });
       userDoc.emailVerified = true;
       userDoc.emailVerificationTokenHash = undefined;
       userDoc.emailVerificationExpires = undefined;
