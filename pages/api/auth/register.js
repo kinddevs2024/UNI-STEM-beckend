@@ -131,7 +131,7 @@ export default async function handler(req, res) {
     );
 
     const requireEmailVerification =
-      process.env.REQUIRE_EMAIL_VERIFICATION === 'true' && smtpConfigured;
+      process.env.REQUIRE_EMAIL_VERIFICATION !== 'false' && smtpConfigured;
 
     // Check if request body exists
     if (!req.body) {

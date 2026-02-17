@@ -62,13 +62,16 @@ export default async function handler(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     user.passwordHash = passwordHash;
+    user.emailVerified = true;
+    user.emailVerificationTokenHash = null;
+    user.emailVerificationExpires = null;
     user.passwordResetTokenHash = null;
     user.passwordResetExpires = null;
     await user.save();
 
     res.json({
       success: true,
-      message: "Password has been set successfully",
+      message: "Account confirmed and password has been set successfully",
     });
   } catch (error) {
     console.error("Set password error:", error);

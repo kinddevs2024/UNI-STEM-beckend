@@ -108,7 +108,7 @@ export default async function handler(req, res) {
     );
 
     const requireEmailVerification =
-      process.env.REQUIRE_EMAIL_VERIFICATION === 'true' && smtpConfigured;
+      process.env.REQUIRE_EMAIL_VERIFICATION !== 'false' && smtpConfigured;
 
     const { email, password } = req.body;
 
@@ -130,6 +130,13 @@ export default async function handler(req, res) {
     }
 
     if (!user.passwordHash) {
+      if (!smtpConfigured) {
+        return res.status(503).json({
+          success: false,
+          message: 'Email service is unavailable. Please contact support to activate your account.',
+        });
+      }
+
       const resetTtlHours = process.env.PASSWORD_RESET_TTL_HOURS
         ? Number(process.env.PASSWORD_RESET_TTL_HOURS)
         : PASSWORD_RESET_TTL_HOURS;
@@ -160,12 +167,16 @@ export default async function handler(req, res) {
           });
         } catch (emailError) {
           console.error('Password setup email error:', emailError);
+          return res.status(503).json({
+            success: false,
+            message: 'Failed to send account activation email. Please try again later.',
+          });
         }
       }
 
       return res.status(401).json({
         success: false,
-        message: 'Password is not set for this account. We sent a setup link to your email.',
+        message: 'Your account is not activated yet. We sent a confirmation link to your email. Open it to confirm your account and create a new password.',
         passwordResetRequired: true
       });
     }
