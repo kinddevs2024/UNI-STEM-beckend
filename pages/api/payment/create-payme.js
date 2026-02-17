@@ -5,6 +5,29 @@ import User from '../../../models/User.js';
 import CoinPurchase from '../../../models/CoinPurchase.js';
 import crypto from 'crypto';
 
+function getFrontendBaseUrl(req) {
+  const configured = process.env.FRONTEND_URL;
+  if (configured && configured.trim()) {
+    return configured.trim();
+  }
+
+  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
+  if (forwardedHost && typeof forwardedHost === 'string') {
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const protocol =
+      typeof forwardedProto === 'string' && forwardedProto.trim()
+        ? forwardedProto.split(',')[0].trim()
+        : process.env.NODE_ENV === 'production'
+          ? 'https'
+          : 'http';
+    return `${protocol}://${forwardedHost}`;
+  }
+
+  return process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5173'
+    : 'http://localhost:3000';
+}
+
 /**
  * POST /api/payment/create-payme
  * Create a Payme payment session. Returns checkout URL for Payme (Uzbek so'm).
@@ -42,11 +65,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid amount (UZS)' });
     }
 
-    const frontendBase =
-      process.env.FRONTEND_URL ||
-      (process.env.NODE_ENV === 'development'
-        ? 'http://localhost:5173'
-        : 'https://unistem.vercel.app');
+    const frontendBase = getFrontendBaseUrl(req);
     const url = returnUrl && typeof returnUrl === 'string' ? returnUrl : `${frontendBase}/buy-coins`;
 
     await connectMongoDB();

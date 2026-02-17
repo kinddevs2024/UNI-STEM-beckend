@@ -491,7 +491,7 @@ app.prepare().then(() => {
       console.log(`📚 Swagger UI: http://${localIP}:${port}/api-docs`);
       console.log(`📋 Swagger JSON: http://${localIP}:${port}/api/swagger.json`);
       console.log(`🔌 Socket.io: http://${localIP}:${port}`);
-      console.log(`📱 Frontend: ${process.env.FRONTEND_URL || (dev ? 'http://localhost:5173' : 'https://unistem.vercel.app/')}`);
+      console.log(`📱 Frontend: ${process.env.FRONTEND_URL || (dev ? 'http://localhost:5173' : 'same-origin via NGINX')}`);
       console.log(``);
       console.log(`💡 Access from other devices using: http://${localIP}:${port}`);
       

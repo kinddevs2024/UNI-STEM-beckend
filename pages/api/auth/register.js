@@ -11,6 +11,29 @@ import { generateToken } from '../../../lib/auth.js';
 import { sendEmailVerification } from '../../../lib/email.js';
 import { VERIFY_EMAIL_PATH, EMAIL_VERIFY_TTL_HOURS } from '../../../lib/email-constants.js';
 
+function getFrontendBaseUrl(req) {
+  const configured = process.env.FRONTEND_URL;
+  if (configured && configured.trim()) {
+    return configured.trim();
+  }
+
+  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
+  if (forwardedHost && typeof forwardedHost === 'string') {
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const protocol =
+      typeof forwardedProto === 'string' && forwardedProto.trim()
+        ? forwardedProto.split(',')[0].trim()
+        : process.env.NODE_ENV === 'production'
+          ? 'https'
+          : 'http';
+    return `${protocol}://${forwardedHost}`;
+  }
+
+  return process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5173'
+    : 'http://localhost:3000';
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -243,11 +266,7 @@ export default async function handler(req, res) {
     );
     await userDoc.save();
 
-    const frontendBase =
-      process.env.FRONTEND_URL ||
-      (process.env.NODE_ENV === 'development'
-        ? 'http://localhost:5173'
-        : 'https://unistem.vercel.app');
+    const frontendBase = getFrontendBaseUrl(req);
     const verifyPath = process.env.VERIFY_EMAIL_PATH || VERIFY_EMAIL_PATH;
     const verifyUrl = new URL(verifyPath, frontendBase);
     verifyUrl.searchParams.set('email', user.email);
