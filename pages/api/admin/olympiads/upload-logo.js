@@ -89,8 +89,18 @@ export default async function handler(req, res) {
       });
     }
 
+    const normalizeFieldValue = (value) => {
+      if (Array.isArray(value)) {
+        return value.length > 0 ? String(value[0]).trim() : "";
+      }
+      if (value === null || value === undefined) return "";
+      return String(value).trim();
+    };
+
     // Get olympiadId from query params or form fields
-    const olympiadId = req.query.olympiadId || fields?.olympiadId;
+    const olympiadId =
+      normalizeFieldValue(req.query?.olympiadId) ||
+      normalizeFieldValue(fields?.olympiadId);
 
     if (!olympiadId) {
       return res.status(400).json({
@@ -232,11 +242,23 @@ export default async function handler(req, res) {
       const filePath = path.join(olympiadFolder, fileName);
 
       // Move the uploaded file to the destination
-      if (fs.existsSync(logoFile.filepath)) {
-        fs.renameSync(logoFile.filepath, filePath);
-      } else {
-        // If filepath doesn't exist, copy the file
-        fs.copyFileSync(logoFile.filepath, filePath);
+      const sourcePath = logoFile.filepath || logoFile.path;
+      if (!sourcePath || !fs.existsSync(sourcePath)) {
+        return res.status(400).json({
+          success: false,
+          message: "Uploaded file path is invalid or missing",
+        });
+      }
+
+      try {
+        fs.renameSync(sourcePath, filePath);
+      } catch (moveError) {
+        if (moveError?.code === "EXDEV") {
+          fs.copyFileSync(sourcePath, filePath);
+          fs.unlinkSync(sourcePath);
+        } else {
+          throw moveError;
+        }
       }
 
       // Generate relative path for URL
