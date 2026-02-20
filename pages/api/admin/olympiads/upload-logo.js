@@ -6,12 +6,16 @@ import {
 import { protect } from "../../../../lib/auth.js";
 import { authorize } from "../../../../lib/auth.js";
 import { handleCORS } from "../../../../lib/middleware/cors.js";
-import { parseForm, saveFile, config } from "../../../../lib/upload.js";
+import { parseForm } from "../../../../lib/upload.js";
 import { getUploadBaseDir } from "../../../../lib/upload-path.js";
 import fs from "fs";
 import path from "path";
 
-export { config };
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 /**
  * Upload Olympiad Logo
