@@ -142,6 +142,7 @@ export default async function handler(req, res) {
       question: question.question,
       type: question.type,
       options: question.options || [],
+      allowMultipleCorrect: Boolean(question.allowMultipleCorrect),
       points: question.points,
       order: question.order || requestedIndex,
       nonce: nonceData.nonce // Include nonce for client

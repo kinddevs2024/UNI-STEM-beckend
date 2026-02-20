@@ -101,6 +101,7 @@ export default async function handler(req, res) {
             question: q.question,
             type: q.type,
             options: q.options || [],
+            allowMultipleCorrect: Boolean(q.allowMultipleCorrect),
             points: q.points,
             order: q.order || 0,
           }));

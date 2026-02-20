@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     await connectDB();
 
     if (req.method === 'POST') {
-      const { olympiadId, question, type, options, correctAnswer, points, order } = req.body;
+      const { olympiadId, question, type, options, correctAnswer, correctAnswers, allowMultipleCorrect, points, order } = req.body;
 
       if (!olympiadId || !question || !type || !points) {
         return res.status(400).json({ 
@@ -41,11 +41,21 @@ export default async function handler(req, res) {
         });
       }
 
-      if (type === 'multiple-choice' && (!options || !correctAnswer)) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Multiple choice questions require options and correctAnswer' 
-        });
+      if (type === 'multiple-choice') {
+        const normalizedOptions = Array.isArray(options)
+          ? options.map((opt) => String(opt)).filter((opt) => opt.trim() !== '')
+          : [];
+        const normalizedCorrectAnswers = Array.isArray(correctAnswers)
+          ? correctAnswers.map((answer) => String(answer)).filter((answer) => answer.trim() !== '')
+          : [];
+        const hasSingleCorrectAnswer = typeof correctAnswer === 'string' && correctAnswer.trim() !== '';
+
+        if (normalizedOptions.length < 2 || (normalizedCorrectAnswers.length === 0 && !hasSingleCorrectAnswer)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Multiple choice questions require options and correctAnswer',
+          });
+        }
       }
 
       const questionDoc = await createQuestion({
@@ -54,6 +64,8 @@ export default async function handler(req, res) {
         type,
         options,
         correctAnswer,
+        correctAnswers,
+        allowMultipleCorrect,
         points,
         order: order || 0,
       });
@@ -65,6 +77,8 @@ export default async function handler(req, res) {
         type: questionDoc.type,
         options: questionDoc.options || [],
         correctAnswer: questionDoc.correctAnswer || null,
+        correctAnswers: questionDoc.correctAnswers || (questionDoc.correctAnswer ? [questionDoc.correctAnswer] : []),
+        allowMultipleCorrect: Boolean(questionDoc.allowMultipleCorrect),
         points: questionDoc.points,
         order: questionDoc.order,
         createdAt: questionDoc.createdAt,
@@ -98,6 +112,8 @@ export default async function handler(req, res) {
           type: q.type,
           options: q.options || [],
           correctAnswer: q.correctAnswer || null,
+          correctAnswers: q.correctAnswers || (q.correctAnswer ? [q.correctAnswer] : []),
+          allowMultipleCorrect: Boolean(q.allowMultipleCorrect),
           points: q.points,
           order: q.order,
           olympiadLogo: olympiad ? (olympiad.olympiadLogo || null) : null,

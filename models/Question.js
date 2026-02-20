@@ -22,9 +22,15 @@ const questionSchema = new mongoose.Schema({
   },
   correctAnswer: {
     type: String,
-    required: function() {
-      return this.type === 'multiple-choice';
-    }
+    default: null
+  },
+  correctAnswers: {
+    type: [String],
+    default: []
+  },
+  allowMultipleCorrect: {
+    type: Boolean,
+    default: false
   },
   points: {
     type: Number,

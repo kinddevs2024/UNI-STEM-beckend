@@ -48,7 +48,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const { question, type, options, correctAnswer, points, order } = req.body;
+      const { question, type, options, correctAnswer, correctAnswers, allowMultipleCorrect, points, order } = req.body;
 
       const updates = {};
       if (typeof question === 'string') updates.question = question.trim();
@@ -67,27 +67,69 @@ export default async function handler(req, res) {
           : [];
       }
       if (correctAnswer !== undefined) updates.correctAnswer = correctAnswer;
+      if (correctAnswers !== undefined) {
+        updates.correctAnswers = Array.isArray(correctAnswers)
+          ? correctAnswers
+              .map((answer) => String(answer))
+              .filter((answer) => answer.trim() !== '')
+          : [];
+      }
+      if (allowMultipleCorrect !== undefined) {
+        updates.allowMultipleCorrect = Boolean(allowMultipleCorrect);
+      }
 
       const nextType = updates.type || existing.type;
       if (nextType === 'multiple-choice') {
         const nextOptions = updates.options || existing.options || [];
+        const nextAllowMultipleCorrect =
+          updates.allowMultipleCorrect !== undefined
+            ? Boolean(updates.allowMultipleCorrect)
+            : Boolean(existing.allowMultipleCorrect);
         const nextCorrectAnswer =
           updates.correctAnswer !== undefined
             ? updates.correctAnswer
             : existing.correctAnswer;
+        const nextCorrectAnswers =
+          updates.correctAnswers !== undefined
+            ? updates.correctAnswers
+            : Array.isArray(existing.correctAnswers)
+              ? existing.correctAnswers
+              : nextCorrectAnswer
+                ? [nextCorrectAnswer]
+                : [];
 
-        if (!Array.isArray(nextOptions) || nextOptions.length === 0 || !nextCorrectAnswer) {
+        const validCorrectAnswers = nextCorrectAnswers.filter((answer) => nextOptions.includes(answer));
+        const effectiveCorrectAnswers = validCorrectAnswers.length > 0
+          ? [...new Set(validCorrectAnswers)]
+          : typeof nextCorrectAnswer === 'string' && nextOptions.includes(nextCorrectAnswer)
+            ? [nextCorrectAnswer]
+            : [];
+
+        if (!Array.isArray(nextOptions) || nextOptions.length < 2 || effectiveCorrectAnswers.length === 0) {
           return res.status(400).json({
             success: false,
             message: 'Multiple choice questions require options and correctAnswer',
           });
         }
 
+        if (!nextAllowMultipleCorrect && effectiveCorrectAnswers.length > 1) {
+          return res.status(400).json({
+            success: false,
+            message: 'Single-answer mode allows only one correct option',
+          });
+        }
+
         updates.options = nextOptions;
-        updates.correctAnswer = nextCorrectAnswer;
+        updates.allowMultipleCorrect = nextAllowMultipleCorrect;
+        updates.correctAnswers = nextAllowMultipleCorrect
+          ? effectiveCorrectAnswers
+          : [effectiveCorrectAnswers[0]];
+        updates.correctAnswer = updates.correctAnswers[0] || null;
       } else {
         updates.options = [];
         updates.correctAnswer = null;
+        updates.correctAnswers = [];
+        updates.allowMultipleCorrect = false;
       }
 
       const updated = await updateQuestion(id, updates);

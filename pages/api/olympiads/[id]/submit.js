@@ -18,6 +18,54 @@ import { createAuditLog } from '../../../../lib/audit-logger.js';
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
+function normalizeAnswerList(value) {
+  if (Array.isArray(value)) {
+    return [...new Set(value.map((item) => String(item)).filter((item) => item.trim() !== ''))];
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+  return [];
+}
+
+function getCorrectAnswers(question) {
+  const fromArray = normalizeAnswerList(question?.correctAnswers);
+  if (fromArray.length > 0) {
+    return fromArray;
+  }
+
+  if (typeof question?.correctAnswer === 'string' && question.correctAnswer.trim() !== '') {
+    return [question.correctAnswer.trim()];
+  }
+
+  return [];
+}
+
+function isMultipleChoiceAnswerCorrect(question, submittedAnswer) {
+  const submitted = normalizeAnswerList(submittedAnswer);
+  const expected = getCorrectAnswers(question);
+
+  if (submitted.length === 0 || expected.length === 0) {
+    return false;
+  }
+
+  const submittedSet = new Set(submitted);
+  const expectedSet = new Set(expected);
+
+  if (submittedSet.size !== expectedSet.size) {
+    return false;
+  }
+
+  for (const expectedAnswer of expectedSet) {
+    if (!submittedSet.has(expectedAnswer)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 /**
  * @swagger
  * /olympiads/{id}/submit:
@@ -361,17 +409,21 @@ export default async function handler(req, res) {
         let isCorrect = false;
 
         if (question.type === 'multiple-choice') {
-          isCorrect = question.correctAnswer === answer;
+          isCorrect = isMultipleChoiceAnswerCorrect(question, answer);
           score = isCorrect ? question.points : 0;
         }
 
         totalScore += score;
 
         const submission = await createSubmission({
+        const submissionAnswer =
+          typeof answer === 'string' ? answer : JSON.stringify(answer ?? '');
+
+        const submission = await createSubmission({
           userId: userId.toString(),
           olympiadId,
           questionId,
-          answer,
+          answer: submissionAnswer,
           score,
           isCorrect,
         });
@@ -403,9 +455,12 @@ export default async function handler(req, res) {
 
         if (question.type === 'multiple-choice') {
           // Test question - compare with correct answer
-          isCorrect = question.correctAnswer === answerValue;
+          isCorrect = isMultipleChoiceAnswerCorrect(question, answerValue);
           score = isCorrect ? question.points : 0;
-          submissionAnswer = answerValue; // Store the selected option
+          submissionAnswer =
+            typeof answerValue === 'string'
+              ? answerValue
+              : JSON.stringify(answerValue ?? '');
         } else if (question.type === 'essay') {
           // Essay question - analyze and score text
           if (typeof answerValue !== 'string' || answerValue.trim().length === 0) {

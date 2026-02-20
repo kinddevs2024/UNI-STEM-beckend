@@ -15,6 +15,54 @@ import { getClientIP } from '../../../../lib/device-fingerprint.js';
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
+function normalizeAnswerList(value) {
+  if (Array.isArray(value)) {
+    return [...new Set(value.map((item) => String(item)).filter((item) => item.trim() !== ''))];
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+  return [];
+}
+
+function getCorrectAnswers(question) {
+  const fromArray = normalizeAnswerList(question?.correctAnswers);
+  if (fromArray.length > 0) {
+    return fromArray;
+  }
+
+  if (typeof question?.correctAnswer === 'string' && question.correctAnswer.trim() !== '') {
+    return [question.correctAnswer.trim()];
+  }
+
+  return [];
+}
+
+function isMultipleChoiceAnswerCorrect(question, submittedAnswer) {
+  const submitted = normalizeAnswerList(submittedAnswer);
+  const expected = getCorrectAnswers(question);
+
+  if (submitted.length === 0 || expected.length === 0) {
+    return false;
+  }
+
+  const submittedSet = new Set(submitted);
+  const expectedSet = new Set(expected);
+
+  if (submittedSet.size !== expectedSet.size) {
+    return false;
+  }
+
+  for (const expectedAnswer of expectedSet) {
+    if (!submittedSet.has(expectedAnswer)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 /**
  * Submit answer for current question
  * POST /api/olympiads/[id]/answer
@@ -226,7 +274,7 @@ export default async function handler(req, res) {
     let isCorrect = false;
 
     if (question.type === 'multiple-choice') {
-      isCorrect = question.correctAnswer === answer;
+      isCorrect = isMultipleChoiceAnswerCorrect(question, answer);
       score = isCorrect ? (question.points || 0) : 0;
     } else if (question.type === 'essay') {
       // Essay questions will be scored separately, default to 0 for now

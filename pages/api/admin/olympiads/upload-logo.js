@@ -69,12 +69,21 @@ export default async function handler(req, res) {
     // Parse form data
     let fields, files;
     try {
-      const parsed = await parseForm(req);
+      const parsed = await parseForm(req, "./uploads", {
+        maxFileSize: 5 * 1024 * 1024,
+      });
       fields = parsed.fields;
       files = parsed.files;
     } catch (parseError) {
       console.error("Error parsing form data:", parseError);
-      return res.status(400).json({
+      const message = String(parseError?.message || "").toLowerCase();
+      const isTooLarge =
+        parseError?.httpCode === 413 ||
+        message.includes("too large") ||
+        message.includes("maxfilesize") ||
+        message.includes("request body too large");
+
+      return res.status(isTooLarge ? 413 : 400).json({
         success: false,
         message: "Error parsing form data: " + parseError.message,
       });
