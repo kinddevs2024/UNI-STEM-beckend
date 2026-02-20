@@ -414,8 +414,6 @@ export default async function handler(req, res) {
         }
 
         totalScore += score;
-
-        const submission = await createSubmission({
         const submissionAnswer =
           typeof answer === 'string' ? answer : JSON.stringify(answer ?? '');
 
