@@ -8,6 +8,7 @@ import { calculateEndTime } from '../../../../lib/timer-service.js';
 import { generateFingerprintHash, getClientIP, detectVM } from '../../../../lib/device-fingerprint.js';
 import { bindDeviceToAttempt, validateDeviceFingerprint } from '../../../../lib/device-locking.js';
 import { createAuditLog } from '../../../../lib/audit-logger.js';
+import { getSystemControlsSync } from '../../../../lib/system-controls.js';
 import crypto from 'crypto';
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
@@ -38,7 +39,37 @@ export default async function handler(req, res) {
 
     const { id: olympiadId } = req.query;
     const userId = authResult.user._id;
+    const controls = getSystemControlsSync();
     const { proctoringStatus, deviceFingerprint } = req.body;
+
+    const isStudent = authResult.user?.role === 'student';
+    if (controls.requireProfileCompletion && isStudent) {
+      const profileFields = [
+        'firstName',
+        'secondName',
+        'tel',
+        'address',
+        'schoolName',
+        'dateBorn',
+        'gender'
+      ];
+
+      const missingFields = profileFields.filter((field) => {
+        const value = authResult.user?.[field];
+        if (value === null || value === undefined) return true;
+        if (typeof value === 'string') return value.trim().length === 0;
+        return false;
+      });
+
+      if (missingFields.length > 0) {
+        return res.status(400).json({
+          success: false,
+          code: 'PROFILE_INCOMPLETE',
+          message: 'Please complete your profile before starting olympiad.',
+          missingFields,
+        });
+      }
+    }
 
     // Validate olympiad exists
     const olympiad = await findOlympiadById(olympiadId);

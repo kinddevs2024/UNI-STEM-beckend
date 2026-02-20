@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import User from '../../../models/User.js';
 import { generateToken } from '../../../lib/auth.js';
 import { sendEmailVerification } from '../../../lib/email.js';
+import { getSystemControlsSync } from '../../../lib/system-controls.js';
 import {
   EMAIL_VERIFY_CODE_TTL_MINUTES,
   EMAIL_VERIFY_CODE_RESEND_COOLDOWN_SECONDS,
@@ -110,8 +111,8 @@ export default async function handler(req, res) {
       (process.env.SMTP_FROM || process.env.SMTP_USER)
     );
 
-    const requireEmailVerification =
-      process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
+    const controls = getSystemControlsSync();
+    const requireEmailVerification = controls.emailVerificationEnabled;
 
     if (requireEmailVerification && !smtpConfigured) {
       return res.status(503).json({
