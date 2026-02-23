@@ -10,6 +10,8 @@ import { readFileSync, existsSync } from 'fs';
 import { networkInterfaces } from 'os';
 import * as presenceStore from './lib/presence-store.js';
 import { flushPresenceToMongo } from './lib/presence-flush.js';
+import createPortfolioApp from './lib/portfolio/app.js';
+import { verifyAccessToken } from './lib/portfolio/tokenService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -151,6 +153,8 @@ const SWAGGER_HTML = `<!DOCTYPE html>
 </html>`;
 
 app.prepare().then(() => {
+  let portfolioApp;
+
   const httpServer = createServer(async (req, res) => {
     // Log incoming requests for debugging
     const startTime = Date.now();
@@ -162,6 +166,20 @@ app.prepare().then(() => {
       res.setHeader('Content-Type', 'text/html');
       res.end(SWAGGER_HTML);
       return;
+    }
+
+    // Portfolio API (unified backend): strip /api/portfolio and pass to Express
+    if (urlPath.startsWith('/api/portfolio')) {
+      if (!portfolioApp) {
+        res.statusCode = 503;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ message: 'Portfolio service initializing' }));
+        return;
+      }
+      const [pathname, qs] = (req.url || '').split('?');
+      const newPath = pathname.replace(/^\/api\/portfolio/, '') || '/';
+      req.url = qs ? `${newPath}?${qs}` : newPath;
+      return portfolioApp(req, res);
     }
 
     try {
@@ -188,7 +206,37 @@ app.prepare().then(() => {
     },
   });
 
-  // Socket.io authentication middleware
+  // --- Portfolio namespace: real-time chat & notifications ---
+  const portfolioNamespace = io.of('/portfolio');
+  portfolioNamespace.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (token) {
+      const decoded = verifyAccessToken(token);
+      if (decoded) {
+        socket.userId = String(decoded.userId || decoded.id || '');
+      }
+    }
+    next();
+  });
+  portfolioNamespace.on('connection', (socket) => {
+    if (socket.userId) {
+      socket.join(`portfolio-user-${socket.userId}`);
+    }
+    socket.on('join-conversation', (conversationId) => {
+      if (conversationId) {
+        socket.join(`portfolio-conversation-${conversationId}`);
+      }
+    });
+    socket.on('leave-conversation', (conversationId) => {
+      if (conversationId) {
+        socket.leave(`portfolio-conversation-${conversationId}`);
+      }
+    });
+  });
+
+  portfolioApp = createPortfolioApp(portfolioNamespace);
+
+  // Socket.io authentication middleware (default namespace - olympiads)
   io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (token) {
