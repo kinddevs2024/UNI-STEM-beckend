@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    trim: true,
-    default: ''
+    required: [true, 'Please add a name'],
+    trim: true
   },
   firstName: {
     type: String,
@@ -115,16 +115,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
-  },
-  // Portfolio-specific (shared User collection)
-  blockedReason: { type: String, trim: true, default: '' },
-  blockedAt: { type: Date, default: null },
-  lastActiveAt: { type: Date, default: Date.now }
+  }
 }, {
   timestamps: true
 });
-
-userSchema.index({ lastActiveAt: 1 });
 
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
