@@ -2,6 +2,21 @@
 
 Ошибка **502 Bad Gateway** от nginx значит: **бэкенд (Node) не отвечает** на том порту, на который nginx отправляет запросы. Ниже — что проверить на сервере.
 
+## Быстрый запуск для global-olimpiads.biz
+
+На сервере выполни **из каталога бэкенда**:
+
+```bash
+cd ~/UNI-STEM-beckend
+git pull
+chmod +x scripts/start-on-port-3000.sh
+./scripts/start-on-port-3000.sh
+```
+
+Скрипт соберёт проект, запустит бэкенд через PM2 с именем **olympiad-backend** на порту **3000** и проверит ответ `/api/health`. Дальше nginx (если у него `proxy_pass http://127.0.0.1:3000`) будет отдавать API без 502.
+
+Перезапуск в будущем: `pm2 restart olympiad-backend --update-env`
+
 ## 1. Запущен ли процесс бэкенда
 
 На сервере выполни:
@@ -39,8 +54,8 @@ sudo netstat -tlnp | grep 3000
 # Ошибки nginx (часто: "connection refused" или "upstream timed out"):
 sudo tail -50 /var/log/nginx/error.log
 
-# Логи приложения (PM2):
-pm2 logs global-olympiad-backend --lines 100
+# Логи приложения (PM2, имя приложения: olympiad-backend):
+pm2 logs olympiad-backend --lines 100
 ```
 
 - **Connection refused** — ничего не слушает на том порту (запусти бэкенд или поправь PORT/nginx).
@@ -78,13 +93,13 @@ curl -s -X POST http://127.0.0.1:3000/api/auth/login -H "Content-Type: applicati
 ## 5. Автозапуск через PM2 (рекомендуется)
 
 ```bash
-cd /path/to/UNI-STEM-beckend
-pm2 start server.js --name global-olympiad-backend
+cd ~/UNI-STEM-beckend
+pm2 start ecosystem.config.cjs --env production
 pm2 save
 pm2 startup
 ```
 
-Убедись, что в окружении задано `PORT=3000` (в `.env` или в `ecosystem.config.js` для PM2).
+Имя приложения в PM2: **olympiad-backend**. В `ecosystem.config.cjs` уже задано `PORT=3000`.
 
 ## 6. Конфиг nginx для global-olimpiads.biz
 
