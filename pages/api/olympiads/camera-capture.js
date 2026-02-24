@@ -4,7 +4,6 @@ import { protect } from "../../../lib/auth.js";
 import {
   parseForm,
   saveFile,
-  config,
   isVideoFile,
 } from "../../../lib/upload.js";
 import { getUploadBaseDir } from "../../../lib/upload-path.js";
@@ -13,7 +12,7 @@ import path from "path";
 
 import { handleCORS } from '../../../lib/api-helpers.js';
 
-export { config };
+export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
   if (handleCORS(req, res)) return;

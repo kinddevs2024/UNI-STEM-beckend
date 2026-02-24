@@ -7,11 +7,10 @@ import { handleCORS } from '../../../lib/api-helpers.js';
 import {
   parseForm,
   saveFile,
-  config,
   isVideoFile,
 } from "../../../lib/upload.js";
 
-export { config };
+export const config = { api: { bodyParser: false } };
 
 /**
  * Video Upload Endpoint

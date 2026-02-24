@@ -6,10 +6,9 @@ import { handleCORS } from '../../../lib/api-helpers.js';
 import {
   parseForm,
   saveFile,
-  config,
 } from "../../../lib/upload.js";
 
-export { config };
+export const config = { api: { bodyParser: false } };
 
 /**
  * Screenshot Upload Endpoint
