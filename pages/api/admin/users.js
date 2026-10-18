@@ -60,6 +60,7 @@ export default async function handler(req, res) {
         email: user.email,
         name: user.name,
         role: user.role,
+        coins: user.role === 'student' ? (user.coins ?? 0) : null,
         createdAt: user.createdAt,
       }));
 

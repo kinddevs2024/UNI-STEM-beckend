@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
     await connectMongoDB();
     const user = await User.findById(authResult.user._id).select('coins').lean();
-    const coins = typeof user?.coins === 'number' ? user.coins : 100; // Default for legacy users
+    const coins = typeof user?.coins === 'number' ? user.coins : 0;
 
     res.json({ success: true, coins });
   } catch (error) {

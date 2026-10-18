@@ -1,6 +1,13 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+  gradeCategory: { type: String, enum: ['5','6','7','8','9','10','11','student',null], default: null },
+  ticketActivatedAt: {type:Date,default:null},
+  username: {type:String, lowercase:true, trim:true, unique:true, sparse:true},
+  adminCreated: {type:Boolean, default:false},
+  mustChangePassword: {type:Boolean, default:false},
+  temporaryPasswordEncrypted: {type:String, select:false},
+  googleId: { type: String, unique: true, sparse: true },
   name: {
     type: String,
     required: [true, 'Please add a name'],
@@ -21,7 +28,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       'Please add a valid email'
     ]
   },
@@ -66,9 +73,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  coinEntries: [{ _id: false, olympiadId: String, chargeId: String, coins: Number, chargedAt: Date, state: String }],
+  coinRewards: [{ _id: false, olympiadId: String, coins: Number, awardedAt: Date }],
+  coinCredits: [{ _id: false, requestId: String, coins: Number, actorId: String, createdAt: Date }],
   coins: {
     type: Number,
-    default: 100,
+    default: 0,
     min: 0
   },
   passwordHash: {

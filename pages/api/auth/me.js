@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     const user = authResult.user;
     // Ensure coins is always a number (for users created before coins field existed)
     if (typeof user.coins !== 'number') {
-      user.coins = 100; // Default for legacy users
+      user.coins = 0;
     }
 
     res.json(user);

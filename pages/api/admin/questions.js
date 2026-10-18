@@ -59,6 +59,7 @@ export default async function handler(req, res) {
       }
 
       const questionDoc = await createQuestion({
+        gradeCategory: req.body.gradeCategory,
         olympiadId,
         question,
         type,
@@ -73,6 +74,7 @@ export default async function handler(req, res) {
       return res.status(201).json({
         _id: questionDoc._id,
         olympiadId: questionDoc.olympiadId,
+        gradeCategory: questionDoc.gradeCategory,
         question: questionDoc.question,
         type: questionDoc.type,
         options: questionDoc.options || [],
@@ -96,6 +98,7 @@ export default async function handler(req, res) {
       }
 
       // Sort by order, then by createdAt
+      if (req.query.gradeCategory) questions = questions.filter(q => q.gradeCategory === req.query.gradeCategory);
       questions = questions.sort((a, b) => {
         if (a.order !== b.order) {
           return a.order - b.order;
@@ -108,6 +111,7 @@ export default async function handler(req, res) {
         return {
           _id: q._id,
           olympiadId: q.olympiadId,
+          gradeCategory: q.gradeCategory,
           question: q.question,
           type: q.type,
           options: q.options || [],

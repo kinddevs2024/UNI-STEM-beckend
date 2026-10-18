@@ -259,7 +259,7 @@ export default async function handler(req, res) {
     }
 
     // Get all results to calculate rank
-    const allResultsRaw = await findResultsByOlympiadId(olympiadId);
+    const allResultsRaw = await findResultsByOlympiadId(olympiadId, userResult.gradeCategory || null);
     // For students: show checked+visible results (publicly viewable), visible results, and their own result even if not visible
     // For admin/resolter/owner: show all results (they already returned early, this is just for safety)
     const allResults = allResultsRaw
@@ -318,7 +318,7 @@ export default async function handler(req, res) {
     );
 
     // Get questions
-    const questions = await findQuestionsByOlympiadId(olympiadId);
+    const questions = await findQuestionsByOlympiadId(olympiadId, userResult.gradeCategory || null);
 
     // Build answers object
     const answers = {};

@@ -9,6 +9,8 @@ import { protect, authorize } from '../../../../lib/auth.js';
 import { analyzeText } from '../../../../lib/text-analysis.js';
 import Olympiad from '../../../../models/Olympiad.js';
 
+import { buildQuestionReview } from '../../../../lib/question-review.js';
+
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
 export default async function handler(req, res) {
@@ -127,7 +129,7 @@ export default async function handler(req, res) {
 
     // Get all results to calculate rank
     // For rank calculation, include all results (to get accurate position)
-    const allResultsRaw = await findResultsByOlympiadId(olympiadId);
+    const allResultsRaw = await findResultsByOlympiadId(olympiadId, userResult.gradeCategory || null);
     const allResults = allResultsRaw
       .sort((a, b) => {
         if (b.totalScore !== a.totalScore) {
@@ -169,7 +171,7 @@ export default async function handler(req, res) {
     const userSubmissions = await findSubmissionsByUserAndOlympiad(userId, olympiadId);
     
     // Get questions
-    const questions = await findQuestionsByOlympiadId(olympiadId);
+    const questions = await findQuestionsByOlympiadId(olympiadId, userResult.gradeCategory || null);
     
     // Build answers object
     const answers = {};
@@ -246,6 +248,7 @@ export default async function handler(req, res) {
         answers,
         correctAnswers,
         submissionDetails,
+        questionReview: buildQuestionReview(questions, userSubmissions),
         ...(essayAnalysis && { essayAnalysis }),
         ...(Object.keys(essayAnalyses).length > 0 && { essayAnalyses }),
       },

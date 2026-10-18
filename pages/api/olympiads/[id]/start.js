@@ -1,3 +1,7 @@
+import { normalizeProctoringMode } from '../../../../lib/mobile-proctoring.js';
+import { assertEntryFeeConfirmed } from '../../../../lib/coin-policy.js';
+import { chargeOlympiadEntry, refundUnstartedEntry, activateEntry } from '../../../../lib/coin-entry.js';
+import { findResultByUserAndOlympiad } from '../../../../lib/result-helper.js';
 import connectMongoDB from '../../../../lib/mongodb.js';
 import { findOlympiadById } from '../../../../lib/olympiad-helper.js';
 import { protect } from '../../../../lib/auth.js';
@@ -10,6 +14,8 @@ import { bindDeviceToAttempt, validateDeviceFingerprint } from '../../../../lib/
 import { createAuditLog } from '../../../../lib/audit-logger.js';
 import { getSystemControlsSync } from '../../../../lib/system-controls.js';
 import crypto from 'crypto';
+import { findQuestionsByOlympiadId } from '../../../../lib/question-helper.js';
+import { questionsForGrade } from '../../../../lib/grade-categories.js';
 
 import { handleCORS } from '../../../../lib/api-helpers.js';
 
@@ -26,6 +32,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  let entryCharge = null;
+  let attemptPersisted = false;
   try {
     const authResult = await protect(req);
     if (authResult.error) {
@@ -40,7 +48,8 @@ export default async function handler(req, res) {
     const { id: olympiadId } = req.query;
     const userId = authResult.user._id;
     const controls = getSystemControlsSync();
-    const { proctoringStatus, deviceFingerprint } = req.body;
+    const { proctoringStatus: requestedProctoringStatus, deviceFingerprint } = req.body;
+    const proctoringStatus = normalizeProctoringMode(req, requestedProctoringStatus);
 
     const isStudent = authResult.user?.role === 'student';
     if (controls.requireProfileCompletion && isStudent) {
@@ -80,6 +89,11 @@ export default async function handler(req, res) {
       });
     }
 
+    const savedResult = await findResultByUserAndOlympiad(userId.toString(), olympiadId);
+    if (savedResult) {
+      return res.status(409).json({ success: false, code: 'OLYMPIAD_ALREADY_SUBMITTED', message: 'You have already submitted this olympiad. Open your saved result.', submissionId: savedResult._id });
+    }
+
     // Validate olympiad is published and active
     if (olympiad.status !== 'published' && olympiad.status !== 'active') {
       return res.status(400).json({ 
@@ -88,6 +102,8 @@ export default async function handler(req, res) {
       });
     }
 
+    const gradeCategory = authResult.user.gradeCategory || null;
+    const availableQuestions = await findQuestionsByOlympiadId(olympiadId);
     // Validate olympiad has questions
     if (!olympiad.questions || olympiad.questions.length === 0) {
       return res.status(400).json({ 
@@ -150,6 +166,13 @@ export default async function handler(req, res) {
       });
     }
 
+    // Resuming keeps the category captured when the attempt began, even if the
+    // profile has since changed. New and genuinely restarted attempts use it anew.
+    if (!validation.resume) {
+      if (availableQuestions.some(q => q.gradeCategory) && !gradeCategory) return res.status(400).json({ code: 'GRADE_REQUIRED', message: 'Choose your school grade or Student before starting.' });
+      if (!questionsForGrade(availableQuestions, gradeCategory).length) return res.status(400).json({ code: 'NO_GRADE_QUESTIONS', message: 'Questions for your class have not been published yet.' });
+    }
+
     // Restart existing attempt if eligible (empty attempt that failed verification)
     if (validation.restart && validation.attempt) {
       const existingAttempt = await Attempt.findById(validation.attempt._id);
@@ -168,6 +191,9 @@ export default async function handler(req, res) {
       const durationSeconds = olympiad.duration || 3600; // Default 1 hour
       const endsAt = calculateEndTime(startedAt, durationSeconds);
 
+      assertEntryFeeConfirmed(olympiad, authResult.user.role, req.body.expectedEntryFeeCoins);
+
+      entryCharge = await chargeOlympiadEntry(userId, authResult.user.role, olympiad);
       existingAttempt.status = 'started';
       existingAttempt.startedAt = startedAt;
       existingAttempt.endsAt = endsAt;
@@ -195,6 +221,7 @@ export default async function handler(req, res) {
       existingAttempt.invalidationReason = null;
       existingAttempt.adminSubmitted = false;
       existingAttempt.proctoringStatus = {
+        mode: proctoringStatus.mode,
         frontCameraActive: proctoringStatus.frontCameraActive || false,
         backCameraActive: proctoringStatus.backCameraActive || false,
         screenShareActive: proctoringStatus.screenShareActive || false,
@@ -203,7 +230,10 @@ export default async function handler(req, res) {
       };
 
       bindDeviceToAttempt(existingAttempt, deviceFingerprint);
+      existingAttempt.gradeCategory = gradeCategory;
       await existingAttempt.save();
+      attemptPersisted = true;
+      await activateEntry(entryCharge);
 
       const proctoringSession = await ProctoringSession.findOne({ attemptId: existingAttempt._id });
       if (proctoringSession) {
@@ -245,6 +275,7 @@ export default async function handler(req, res) {
           endsAt: existingAttempt.endsAt.toISOString(),
           currentQuestionIndex: existingAttempt.currentQuestionIndex,
           sessionToken: existingAttempt.sessionToken,
+          proctoringMode: proctoringStatus.mode,
           durationSeconds
         }
       });
@@ -307,6 +338,7 @@ export default async function handler(req, res) {
           endsAt: endsAt.toISOString(),
           currentQuestionIndex: existingAttempt.currentQuestionIndex || 0,
           sessionToken: existingAttempt.sessionToken,
+          proctoringMode: proctoringStatus.mode,
           durationSeconds
         }
       });
@@ -326,8 +358,13 @@ export default async function handler(req, res) {
     const durationSeconds = olympiad.duration || 3600; // Default 1 hour
     const endsAt = calculateEndTime(startedAt, durationSeconds);
 
+    assertEntryFeeConfirmed(olympiad, authResult.user.role, req.body.expectedEntryFeeCoins);
+
+    entryCharge = await chargeOlympiadEntry(userId, authResult.user.role, olympiad);
+
     // Create attempt
     const attempt = new Attempt({
+      gradeCategory,
       userId,
       olympiadId,
       status: 'started',
@@ -341,6 +378,7 @@ export default async function handler(req, res) {
       sessionToken,
       violations: [],
       proctoringStatus: {
+        mode: proctoringStatus.mode,
         frontCameraActive: proctoringStatus.frontCameraActive || false,
         backCameraActive: proctoringStatus.backCameraActive || false,
         screenShareActive: proctoringStatus.screenShareActive || false,
@@ -354,6 +392,8 @@ export default async function handler(req, res) {
     bindDeviceToAttempt(attempt, deviceFingerprint);
 
     await attempt.save();
+    attemptPersisted = true;
+    await activateEntry(entryCharge);
 
     // Create proctoring session
     const proctoringSession = new ProctoringSession({
@@ -390,10 +430,20 @@ export default async function handler(req, res) {
         endsAt: attempt.endsAt.toISOString(),
         currentQuestionIndex: attempt.currentQuestionIndex,
         sessionToken: attempt.sessionToken,
+        proctoringMode: proctoringStatus.mode,
         durationSeconds
       }
     });
   } catch (error) {
+    if (!attemptPersisted && entryCharge?.charged) {
+      // Another concurrent Start may have saved the same attempt: keep its single fee.
+      const liveAttempt = await Attempt.findOne({ userId: entryCharge.userId, olympiadId: entryCharge.olympiadId });
+      if (!liveAttempt || liveAttempt.status !== 'started') await refundUnstartedEntry(entryCharge);
+    }
+    if (error.code === 'INSUFFICIENT_COINS') return res.status(402).json({ success: false, code: error.code, message: error.message, requiredCoins: error.requiredCoins, balance: error.balance });
+    if (error.code === 'ENTRY_FEE_CHANGED') return res.status(409).json({ success: false, code: error.code, message: error.message, entryFeeCoins: error.entryFeeCoins });
+    if (error.code === 'ENTRY_STARTING') return res.status(409).json({ success: false, code: error.code, message: error.message });
+    if (error.status === 400) return res.status(400).json({success:false,message:error.message});
     console.error('Start attempt error:', error);
     
     // Handle unique constraint violation (one attempt rule)

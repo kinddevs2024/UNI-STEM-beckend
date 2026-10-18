@@ -1,3 +1,4 @@
+import { savedSubmissionResponse } from '../../../../lib/saved-submission-response.js';
 import Result from '../../../../models/Result.js';
 import Submission from '../../../../models/Submission.js';
 import { findOlympiadById } from '../../../../lib/olympiad-helper.js';
@@ -144,6 +145,13 @@ export default async function handler(req, res) {
       userId,
       olympiadId
     });
+
+    // A retry must not create duplicate answers or results, even after expiry.
+    const savedResult = await findResultByUserAndOlympiad(userId.toString(), olympiadId);
+    if (savedResult) {
+      const savedResponse = savedSubmissionResponse(savedResult, attempt);
+      return res.status(savedResponse.status).json(savedResponse.body);
+    }
 
     if (attempt) {
       // Check if time expired
@@ -297,7 +305,8 @@ export default async function handler(req, res) {
     }
 
     // Get all questions for this olympiad
-    const allQuestions = await findQuestionsByOlympiadId(olympiadId);
+    const allQuestions = await findQuestionsByOlympiadId(olympiadId, attempt.gradeCategory || null);
+    olympiad.totalPoints = allQuestions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
     
     if (!allQuestions || allQuestions.length === 0) {
       console.log(`[Submit] No questions found for olympiad ${olympiadId}`);
@@ -546,6 +555,7 @@ export default async function handler(req, res) {
 
     // Create result
     const result = await createResult({
+      gradeCategory: attempt.gradeCategory || null,
       userId: userId.toString(),
       olympiadId,
       totalScore,

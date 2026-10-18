@@ -1,6 +1,6 @@
 import { connectDB } from '../../../../lib/json-db.js';
 import { findOlympiadById } from '../../../../lib/olympiad-helper.js';
-import { findResultsByOlympiadId } from '../../../../lib/result-helper.js';
+import { findResultsByOlympiadId, findResultByUserAndOlympiad } from '../../../../lib/result-helper.js';
 import { findUserById } from '../../../../lib/user-helper.js';
 import { protect } from '../../../../lib/auth.js';
 
@@ -49,7 +49,11 @@ export default async function handler(req, res) {
     // Get all results for this olympiad
     // Show results that are: (checked + visible) OR (just visible)
     // checked + visible = publicly viewable by anyone
-    const allResultsRaw = await findResultsByOlympiadId(olympiadId);
+    const ownResult = authResult.user.role === 'student' ? await findResultByUserAndOlympiad(String(authResult.user._id), olympiadId) : null;
+    const category = authResult.user.role === 'student'
+      ? (ownResult ? ownResult.gradeCategory || null : authResult.user.gradeCategory || null)
+      : undefined;
+    const allResultsRaw = await findResultsByOlympiadId(olympiadId, category);
     const allResults = allResultsRaw
       .filter(r => {
         // Publicly viewable: checked status + visible
@@ -81,7 +85,7 @@ export default async function handler(req, res) {
       else position = `${index + 1}th Place`;
       
       return {
-        rank: index + 1,
+        rank: skip + index + 1,
         position,
         userId: result.userId,
         userName: user ? user.name : 'Unknown',

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const resultSchema = new mongoose.Schema({
+  gradeCategory: { type: String, default: null },
   userId: {
     type: String,
     required: true

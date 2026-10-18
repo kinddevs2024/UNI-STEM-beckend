@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const attemptSchema = new mongoose.Schema({
+  gradeCategory: { type: String, default: null },
   userId: {
     type: String,
     required: true,
@@ -65,6 +66,7 @@ const attemptSchema = new mongoose.Schema({
     }
   }],
   proctoringStatus: {
+    mode: { type:String, enum:['desktop','mobile_camera'], default:'desktop' },
     frontCameraActive: {
       type: Boolean,
       default: false

@@ -1,3 +1,4 @@
+import { parseEntryFee } from '../../../../lib/coin-policy.js';
 import { connectDB } from '../../../../lib/json-db.js';
 import {
   findOlympiadById,
@@ -71,6 +72,11 @@ export default async function handler(req, res) {
       const { title, description, type, subject, startTime, endTime, duration, status } = req.body;
 
       const updateData = {};
+      if (req.body.gradePrizes !== undefined) updateData.gradePrizes = req.body.gradePrizes;
+      if (req.body.entryFeeCoins !== undefined) {
+        try { updateData.entryFeeCoins = parseEntryFee(req.body.entryFeeCoins); } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+        updateData.coinRewardsEnabled = true;
+      }
       if (title) updateData.title = title;
       if (description) updateData.description = description;
       if (type) updateData.type = type;
@@ -114,6 +120,7 @@ export default async function handler(req, res) {
         startTime: olympiad.startTime,
         endTime: olympiad.endTime,
         duration: olympiad.duration,
+        entryFeeCoins: olympiad.entryFeeCoins ?? 50,
         status: olympiad.status,
         createdAt: olympiad.createdAt,
       });

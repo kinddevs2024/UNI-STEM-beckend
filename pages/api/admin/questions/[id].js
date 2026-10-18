@@ -51,6 +51,7 @@ export default async function handler(req, res) {
       const { question, type, options, correctAnswer, correctAnswers, allowMultipleCorrect, points, order } = req.body;
 
       const updates = {};
+      if (req.body.gradeCategory !== undefined) updates.gradeCategory = req.body.gradeCategory;
       if (typeof question === 'string') updates.question = question.trim();
       if (type) updates.type = type;
       if (points !== undefined && !Number.isNaN(Number(points))) {

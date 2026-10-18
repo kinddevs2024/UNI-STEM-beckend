@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const questionSchema = new mongoose.Schema({
+  gradeCategory: { type: String, enum: ['5','6','7','8','9','10','11','student',null], default: null, index: true },
   olympiadId: {
     type: String,
     required: true

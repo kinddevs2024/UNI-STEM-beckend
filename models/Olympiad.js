@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const olympiadSchema = new mongoose.Schema({
+  gradePrizes: [{ _id: false, gradeCategory: { type: String, enum: ['5','6','7','8','9','10','11','student'], required: true }, place: { type: Number, required: true, min: 1 }, name: { type: String, required: true, maxlength: 160 }, photo: { type: String, default: '' } }],
   title: {
     type: String,
     required: [true, 'Please add a title'],
@@ -36,6 +37,9 @@ const olympiadSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Question'
   }],
+  entryFeeCoins: { type: Number, default: 50, min: 0, max: 1000000, validate: Number.isInteger },
+  coinRewardsEnabled: { type: Boolean, default: true },
+  coinReward: { userId: String, coins: Number, awardedAt: Date },
   totalPoints: {
     type: Number,
     default: 0

@@ -1,3 +1,4 @@
+import { parseEntryFee } from '../../../lib/coin-policy.js';
 import { connectDB } from '../../../lib/json-db.js';
 import * as olympiadHelperModule from '../../../lib/olympiad-helper.js';
 import { protect } from '../../../lib/auth.js';
@@ -122,7 +123,11 @@ export default async function handler(req, res) {
         });
       }
 
+      let entryFeeCoins;
+      try { entryFeeCoins = parseEntryFee(req.body.entryFeeCoins); } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
       const olympiad = await olympiadHelper.createOlympiad({
+        gradePrizes: req.body.gradePrizes,
+        entryFeeCoins,
         title,
         description,
         type,

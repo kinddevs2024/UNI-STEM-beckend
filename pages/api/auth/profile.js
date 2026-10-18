@@ -52,6 +52,11 @@ export default async function handler(req, res) {
 
     // Prepare updates object
     const updates = {};
+    if (req.body.gradeCategory !== undefined) {
+      const category = String(req.body.gradeCategory);
+      if (!['5','6','7','8','9','10','11','student'].includes(category)) return res.status(400).json({ message: 'Choose school grade 5–11 or Student.' });
+      updates.gradeCategory = category;
+    }
 
     // Allow updating basic info
     if (name !== undefined) updates.name = name.trim();
@@ -67,7 +72,7 @@ export default async function handler(req, res) {
           message: 'Please provide a valid email' 
         });
       }
-      const existingUser = findUserByEmail(email);
+      const existingUser = await findUserByEmail(email);
       if (existingUser && existingUser._id !== userId) {
         return res.status(400).json({ 
           success: false,
@@ -123,7 +128,10 @@ export default async function handler(req, res) {
     }
 
     // Update user
-    const updatedUser = updateUser(userId, updates);
+    const updatedUser = await updateUser(userId, updates);
+    delete updatedUser.passwordHash;
+    delete updatedUser.passwordResetTokenHash;
+    delete updatedUser.emailVerificationTokenHash;
 
     res.json({
       success: true,

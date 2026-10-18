@@ -72,6 +72,8 @@ export default async function handler(req, res) {
         startTime: olympiad.startTime,
         endTime: olympiad.endTime,
         duration: olympiad.duration,
+        entryFeeCoins: olympiad.entryFeeCoins ?? 50,
+        firstPlaceRewardCoins: 100,
         status: olympiad.status,
         olympiadLogo: olympiad.olympiadLogo || null,
         createdAt: olympiad.createdAt,

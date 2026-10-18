@@ -1,7 +1,7 @@
 import connectMongoDB from '../../../lib/mongodb.js';
 import { findUserByEmail } from '../../../lib/user-helper.js';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../../../lib/auth.js';
+import { generateToken, generateSetupToken } from '../../../lib/auth.js';
 import { handleCORS } from '../../../lib/middleware/cors.js';
 import { checkRateLimitByIP } from '../../../lib/rate-limiting.js';
 import crypto from 'crypto';
@@ -100,7 +100,7 @@ export default async function handler(req, res) {
     }
 
     // Check for user
-    const user = await findUserByEmail(normalizedEmail);
+    const user = normalizedEmail.includes('@') ? await findUserByEmail(normalizedEmail) : await User.findOne({username:normalizedEmail}).lean();
     if (!user) {
       return res.status(401).json({ 
         success: false,
@@ -108,6 +108,7 @@ export default async function handler(req, res) {
       });
     }
 
+    if (user.userBan) return res.status(403).json({message:'Account is blocked.'});
     if (!user.passwordHash) {
       if (!smtpConfigured) {
         return res.status(503).json({
@@ -183,6 +184,7 @@ export default async function handler(req, res) {
       });
     }
 
+    if (user.mustChangePassword) return res.json({passwordChangeRequired:true,setupToken:generateSetupToken(user),username:user.username});
     if (user.emailVerified === false) {
       if (requireEmailVerification && !smtpConfigured) {
         return res.status(503).json({
@@ -271,6 +273,7 @@ export default async function handler(req, res) {
       token,
       user: {
         _id: user._id,
+        username: user.username,
         email: user.email,
         name: user.name,
         role: user.role,

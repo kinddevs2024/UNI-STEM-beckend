@@ -85,6 +85,7 @@ if (!process.env.JWT_SECRET) {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+import { parseGradeCategory } from '../../../lib/grade-categories.js';
 export default async function handler(req, res) {
   if (handleCORS(req, res)) return;
 
@@ -175,7 +176,7 @@ export default async function handler(req, res) {
     }
 
     // Validate role if provided
-    const validRoles = ['student', 'admin', 'owner', 'resolter', 'school-admin', 'school-teacher'];
+    const validRoles = ['student', 'school-teacher'];
     const finalRole = role || 'student';
     if (finalRole && !validRoles.includes(finalRole)) {
       return res.status(400).json({
@@ -192,9 +193,15 @@ export default async function handler(req, res) {
       });
     }
 
+    let gradeCategory = null;
+    if (finalRole === 'student') {
+      try { gradeCategory = parseGradeCategory(req.body.gradeCategory); }
+      catch (error) { return res.status(400).json({ message: error.message }); }
+    }
     // Create user
     const user = await createUser({
       name,
+      gradeCategory,
       email: normalizedEmail,
       password,
       role: finalRole,

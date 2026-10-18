@@ -1,6 +1,8 @@
 import { connectDB } from '../../../lib/json-db.js';
 import { getOlympiadWithCreator } from '../../../lib/olympiad-helper.js';
 import { getAllQuestions, findQuestionsByOlympiadId } from '../../../lib/question-helper.js';
+import { questionsForGrade } from '../../../lib/grade-categories.js';
+import Attempt from '../../../models/Attempt.js';
 import { protect } from '../../../lib/auth.js';
 
 import { handleCORS } from '../../../lib/api-helpers.js';
@@ -86,6 +88,10 @@ export default async function handler(req, res) {
         questions = await findQuestionsByOlympiadId(olympiad._id);
       }
       
+      const attempt = await Attempt.findOne({ userId: String(authResult.user._id), olympiadId: String(id) }).select('gradeCategory').lean();
+      const gradeCategory = attempt ? attempt.gradeCategory || null : authResult.user.gradeCategory || null;
+      const requiresGrade = questions.some(q => Boolean(q.gradeCategory));
+      if (authResult.user.role === 'student') questions = requiresGrade && !gradeCategory && !attempt ? [] : questionsForGrade(questions, gradeCategory);
       // Sort and format questions
       if (questions.length > 0) {
         questions = questions
@@ -116,6 +122,13 @@ export default async function handler(req, res) {
         startTime: olympiad.startTime,
         endTime: olympiad.endTime,
         duration: olympiad.duration,
+        entryFeeCoins: olympiad.entryFeeCoins ?? 50,
+        firstPlaceRewardCoins: 100,
+        gradePrizes: olympiad.gradePrizes || [],
+        gradeCategory,
+        requiresGrade,
+        hasAttempt: Boolean(attempt),
+        totalPoints: questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0),
         status: olympiad.status,
         olympiadLogo: olympiad.olympiadLogo || null,
         questions,

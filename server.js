@@ -481,6 +481,7 @@ app.prepare().then(() => {
       process.exit(1);
     })
     .listen(port, hostname, () => {
+      import('./lib/coin-rewards.js').then(({ startCoinRewardWorker }) => startCoinRewardWorker()).catch(() => console.error('Coin reward worker could not start')); 
       console.log(`========================================`);
       console.log(`✅ Backend Server Running!`);
       console.log(`========================================`);

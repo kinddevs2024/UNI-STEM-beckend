@@ -82,6 +82,9 @@ export default async function handler(req, res) {
     }
 
     user.passwordHash = await bcrypt.hash(password, 10);
+    user.ticketActivatedAt ||= new Date();
+    user.mustChangePassword = false;
+    user.temporaryPasswordEncrypted = undefined;
     user.passwordResetTokenHash = null;
     user.passwordResetExpires = null;
     user.passwordResetFailedAttempts = 0;
