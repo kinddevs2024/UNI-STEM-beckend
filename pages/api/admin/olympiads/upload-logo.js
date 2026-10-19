@@ -196,36 +196,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Delete old logo file if it exists
-    if (olympiad.olympiadLogo) {
-      try {
-        // Extract the file path from the URL
-        // olympiadLogo could be: "/api/uploads/olympiads/olympiad123/logo.jpg" or "olympiads/olympiad123/logo.jpg"
-        let filePath = olympiad.olympiadLogo;
-        if (filePath.startsWith("/api/uploads/")) {
-          filePath = filePath.replace("/api/uploads/", "");
-        }
-        const uploadsBaseDir = getUploadBaseDir(process.env.UPLOAD_PATH || "./uploads");
-        const oldLogoPath = path.join(uploadsBaseDir, filePath);
-        const normalizedOldPath = path.normalize(oldLogoPath);
-        const uploadsDir = path.normalize(uploadsBaseDir);
-
-        // Security check: ensure path is within uploads directory
-        if (
-          normalizedOldPath.startsWith(uploadsDir) &&
-          fs.existsSync(normalizedOldPath)
-        ) {
-          fs.unlinkSync(normalizedOldPath);
-        }
-      } catch (deleteError) {
-        console.warn(
-          "Could not delete old olympiad logo file:",
-          deleteError.message
-        );
-        // Continue even if deletion fails
-      }
-    }
-
     // Save the new logo file to olympiad-specific folder
     let savedFile;
     let fileUrl;
@@ -284,7 +254,7 @@ export default async function handler(req, res) {
 
     // Update olympiad's olympiadLogo field
     try {
-      updateOlympiad(olympiadId, { olympiadLogo: fileUrl });
+      await updateOlympiad(olympiadId, { olympiadLogo: fileUrl });
     } catch (updateError) {
       console.error("Error updating olympiad logo:", updateError);
       // Try to delete the uploaded file if olympiad update fails
