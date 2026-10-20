@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema({
   adminCreated: {type:Boolean, default:false},
   mustChangePassword: {type:Boolean, default:false},
   temporaryPasswordEncrypted: {type:String, select:false},
+  telegramId: { type: String, unique: true, sparse: true },
+  telegramUsername: { type: String, trim: true },
   googleId: { type: String, unique: true, sparse: true },
   name: {
     type: String,
@@ -23,8 +25,9 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Please add an email'],
+    required: function () { return !this.telegramId; },
     unique: true,
+    sparse: true,
     lowercase: true,
     trim: true,
     match: [
