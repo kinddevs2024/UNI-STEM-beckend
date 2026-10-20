@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import dotenv from 'dotenv';
 dotenv.config();
-assert.equal(process.env.MONGODB_URI,'mongodb://127.0.0.1:27942/global_telegram_qa');
+assert.match(process.env.MONGODB_URI,/^mongodb:\/\/127\.0\.0\.1:27942\/global_telegram_qa_[0-9]+$/);
 const {default:mongoose}=await import('mongoose');
 const {default:start}=await import('../pages/api/auth/telegram/start.js');
 const {default:hook}=await import('../pages/api/auth/telegram/webhook.js');
@@ -11,7 +11,8 @@ const {default:Session}=await import('../models/TelegramLogin.js');
 const {digest}=await import('../lib/telegram-login.js');
 const calls=[];
 global.fetch=async(url,init)=>{assert(String(url).startsWith('https://api.telegram.org/botsynthetic-bot/'));calls.push(JSON.parse(init.body));return{ok:true,json:async()=>({ok:true,result:{message_id:calls.length}})}};
-async function call(fn,body={},headers={},ip='qa'+Math.random()){
+let requestSequence=1;
+async function call(fn,body={},headers={},ip='198.51.100.'+(++requestSequence)){
  let result,status=200;const out={};
  const res={setHeader:(k,v)=>out[k]=v,status:n=>(status=n,res),json:data=>(result=data,res),end:()=>res};
  await fn({method:'POST',body,headers:{origin:'https://www.global-olimpiads.biz','x-forwarded-for':ip,...headers},socket:{remoteAddress:ip}},res);
