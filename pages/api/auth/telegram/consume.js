@@ -21,6 +21,6 @@ export default async function handler(req,res) {
  const used=await TelegramLogin.findOneAndUpdate({_id:session._id,status:'approved',expiresAt:{$gt:new Date()}},{$set:{status:'consumed'},$unset:{codeHash:1}},{new:true});
  if(!used)return res.status(401).json({message:'This login link has already been used.'});
  clearCookie(res);
- return res.json({token:generateToken(String(user._id)),user:{_id:String(user._id),name:user.name,role:user.role,email:user.email,telegramUsername:user.telegramUsername,gradeCategory:user.gradeCategory}});
+ return res.json({token:generateToken(String(user._id)),user:{_id:String(user._id),name:user.name,role:user.role,email:user.email,telegramUsername:user.telegramUsername,gradeCategory:user.gradeCategory,language:user.language}});
  } catch {return res.status(503).json({message:'Unable to complete Telegram login.'});}
 }

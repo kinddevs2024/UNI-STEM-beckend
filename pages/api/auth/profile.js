@@ -52,6 +52,10 @@ export default async function handler(req, res) {
 
     // Prepare updates object
     const updates = {};
+    if (req.body.language !== undefined) {
+      if (!['uz','en','ru'].includes(req.body.language)) return res.status(400).json({message:'Choose Uzbek, English or Russian.'});
+      updates.language = req.body.language;
+    }
     if (req.body.gradeCategory !== undefined) {
       const category = String(req.body.gradeCategory);
       if (!['5','6','7','8','9','10','11','student'].includes(category)) return res.status(400).json({ message: 'Choose school grade 5–11 or Student.' });

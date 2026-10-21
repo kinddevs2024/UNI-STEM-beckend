@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+  language: { type:String, enum:['uz','en','ru',null], default:null },
   gradeCategory: { type: String, enum: ['5','6','7','8','9','10','11','student',null], default: null },
   ticketActivatedAt: {type:Date,default:null},
   username: {type:String, lowercase:true, trim:true, unique:true, sparse:true},

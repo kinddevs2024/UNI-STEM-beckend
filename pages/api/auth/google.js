@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     await user.save();
     return res.json({
       token: generateToken(user._id.toString()),
-      user: { _id: user._id.toString(), email: user.email, name: user.name, role: user.role },
+      user: { _id: user._id.toString(), email: user.email, name: user.name, role: user.role, gradeCategory:user.gradeCategory, language:user.language, cookies:user.cookies },
     });
   } catch {
     return res.status(503).json({ message: 'Unable to complete sign-in. Please try again.' });
