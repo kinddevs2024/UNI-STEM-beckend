@@ -18,9 +18,9 @@ export default async function handler(req, res) {
   try {
     const authResult = await protect(req);
     if (authResult.error) {
-      return res.status(authResult.status).json({ 
+      return res.status(authResult.status).json({
         success: false,
-        message: authResult.error 
+        message: authResult.error
       });
     }
 
@@ -28,42 +28,42 @@ export default async function handler(req, res) {
 
     const userId = authResult.user._id;
     const currentUser = await findUserById(userId);
-    
+
     if (!currentUser) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'User not found' 
+        message: 'User not found'
       });
     }
 
     const { consent } = req.body;
 
     // Validate consent value
-    if (!consent) {
-      return res.status(400).json({ 
+    if (![true, false, 'true', 'false'].includes(consent)) {
+      return res.status(400).json({
         success: false,
-        message: 'Please provide consent value' 
+        message: 'Consent must be true or false'
       });
     }
 
     // Update cookies directly (moved out of profile)
     const updates = {
-      cookies: consent,
+      cookies: String(consent),
     };
 
     // Update user
-    const updatedUser = updateUser(userId, updates);
+    const updatedUser = await updateUser(userId, updates);
 
     res.json({
       success: true,
       message: 'Cookie consent updated successfully',
-      user: updatedUser,
+      cookies: updatedUser.cookies,
     });
   } catch (error) {
     console.error('Update cookie consent error:', error);
-    res.status(400).json({ 
+    res.status(400).json({
       success: false,
-      message: 'Failed to update cookie consent' 
+      message: 'Failed to update cookie consent'
     });
   }
 }
